@@ -2,6 +2,9 @@
 
 Newest first. Versions are in `VERSION` and shown on the page.
 
+## 1.17.5 (2026-11-10)
+- First real speed measurement: Acer Nitro Laptop running gpt-oss:20b generates 9.86 tokens/s (`ollama run --verbose`, 71%/29% CPU/GPU, 14 GB, context 4096). The page estimated 9.1. Recorded as `measured` (9.9) and in `calibration.md`.
+
 ## 1.17.4 (2026-11-10)
 - "This computer will run all the time" now explains why: Windows restarts itself for updates, and Ollama on Windows starts at sign-in rather than boot, so the service can go down; Windows also idles at about 3.5 to 4 GB RAM versus under 0.5 GB for headless Linux (one review). Added how to expose Ollama to other computers (OLLAMA_HOST).
 - Power use checked: no reliable evidence either way (forum readings go both ways and trace to drivers), so the page says it is not a reason.

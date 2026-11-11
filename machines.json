@@ -15,7 +15,8 @@
     "unified_memory": false,
     "storage_total_gb": 477,
     "storage_used_gb": 128,
-    "notes": "Bandwidth figures are approximate (dual-channel DDR4-3200 and 192-bit GDDR6) and should be verified."
+    "notes": "Bandwidth figures are approximate (dual-channel DDR4-3200 and 192-bit GDDR6) and should be verified.",
+    "measured": {"gpt-oss:20b": 9.9}
   },
   {
     "id": "custom-build-desktop",

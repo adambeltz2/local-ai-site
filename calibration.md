@@ -22,6 +22,6 @@ Record measured against estimated below. If estimates are consistently off by mo
 
 | Machine | Model tag | Estimated tok/s | Measured tok/s | Date | Notes (ollama ps PROCESSOR) |
 |---|---|---|---|---|---|
-| | | | | | |
+| Acer Nitro Laptop | gpt-oss:20b | 9.1 | 9.86 | 2026-11-10 | 71%/29% CPU/GPU, 14 GB, context 4096, `ollama run --verbose` (250 tokens). First prompt after load had a slow prompt eval (1.94 tok/s for 72 tokens); the estimate was within 8 percent for generation. |
 
 Useful first measurements: one model that fits fully in the Acer's 6 GB GPU, one that spills into RAM, one on the Threadripper box with the 2080 Ti, and one on the MacBook Air.
