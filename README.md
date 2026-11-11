@@ -2,7 +2,9 @@
 
 A free, open-source, local guide to open-weight AI models. Pick your machine and what you want to do (chat, code in your editor, a coding agent, reasoning, document Q&A, vision, automations) and the page recommends one model, explains why, and gives copy-paste steps to run it. Below that is the full sortable, filterable matrix of all models with fit estimates per machine.
 
-Open `index.html` in a browser. It is fully self-contained and works offline, including from a phone.
+**Live page: https://adambeltz2.github.io/local-ai-site/**
+
+Or open `index.html` in a browser. It is fully self-contained and works offline, including from a phone.
 
 ## What's here
 
