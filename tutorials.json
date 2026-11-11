@@ -1,0 +1,206 @@
+{
+  "about": "First-session walkthroughs for the tools. Only commands and behaviors from the tools' own docs are stated as fact; example prompts are written for this page and should be adjusted to your project. A step can show a real screenshot if you add a file named in its `shot` field to the screens/ folder (see README).",
+  "tutorials": {
+    "opencode": {
+      "title": "Your first session with opencode",
+      "intro": "opencode runs in a terminal inside your project folder. You type what you want, it reads files, proposes or makes changes and can run commands.",
+      "first_task": "Ask it to explain your project before you let it change anything.",
+      "prompts": [
+        "Give me a quick summary of the codebase.",
+        "Switch to Plan, then: I want to add a dark mode toggle. List the files you would change and why. Do not edit anything yet.",
+        "In Build: make the change you described, then tell me how to test it."
+      ],
+      "walkthrough": [
+        {"title": "Open your project", "body": "In a terminal, go into the project folder and start opencode. You can also pass the folder: opencode /path/to/project.", "cmd": "cd path/to/your/project\nopencode", "shot": "opencode-start"},
+        {"title": "Check which model it is using", "body": "Type /models to list models and pick the local one you set up in opencode.json (the model name matches your Ollama tag).", "cmd": "/models"},
+        {"title": "Let it learn the project (once)", "body": "Run /init. It guides you through creating or updating an AGENTS.md file that describes the project to the agent. opencode's docs suggest committing that file to Git.", "cmd": "/init"},
+        {"title": "Start in Plan, not Build", "body": "Press Tab to cycle between its main agents. Build is the default and has all tools on (it can edit files and run commands). Plan is for analysis: it cannot edit your code (it may write its own plan notes). For anything you are not sure about, plan first, then Tab to Build.", "shot": "opencode-plan"},
+        {"title": "Point at files and run commands", "body": "Type @ and start a file name to attach that file to your message. Start a message with ! to run a shell command and put its output into the conversation.", "cmd": "@src/app.js why does this crash?\n!git status"},
+        {"title": "Undo if it goes wrong", "body": "/undo removes the last message, the replies after it and any file changes. /redo brings them back. Both need the project to be a Git repository, so run git init first if it is not."}
+      ],
+      "commands": [
+        {"cmd": "Tab", "what": "Switch between Build and Plan agents"},
+        {"cmd": "/models", "what": "List and switch models"},
+        {"cmd": "/init", "what": "Create or update AGENTS.md for the project"},
+        {"cmd": "/undo  /redo", "what": "Remove or restore the last message and its file changes (needs Git)"},
+        {"cmd": "/compact", "what": "Shrink the session so far to save context (useful with local models)"},
+        {"cmd": "/new", "what": "Start a fresh session"},
+        {"cmd": "/sessions", "what": "Switch between past sessions"},
+        {"cmd": "/help", "what": "Show help"}
+      ],
+      "careful": [
+        "Build can edit files and run commands. Use a Git repository and commit before big jobs so /undo and Git can rescue you.",
+        "Local models have a short memory: if replies get worse in a long session, use /compact or /new, and check that Ollama's context is raised (the page's earlier step)."
+      ],
+      "sources": [
+        {"title": "opencode: Using the TUI", "url": "https://opencode.ai/docs/tui/"},
+        {"title": "opencode: Agents (Build and Plan)", "url": "https://opencode.ai/docs/agents/"}
+      ],
+      "checked": "2026-10-26"
+    },
+    "aider": {
+      "title": "Your first session with Aider",
+      "intro": "Aider works in a Git project. You tell it which files it may edit, ask for a change, and it edits the files and commits the result so you can undo it.",
+      "first_task": "Add one small file, ask a question about it, then ask for one small change.",
+      "prompts": [
+        "Explain what this file does in plain language.",
+        "Add a function that checks whether a name is empty and use it in the form handler.",
+        "Write a test for the function you just added."
+      ],
+      "walkthrough": [
+        {"title": "Start inside a Git repository", "body": "Go to your project and start Aider with your Ollama model. Naming files after the command adds them to the chat.", "cmd": "cd path/to/your/project\naider --model ollama_chat/<tag from this page> src/app.js"},
+        {"title": "Add only the files that need editing", "body": "Aider's docs say extra files can confuse the model and cost more tokens; Aider pulls related context from the rest of the repo by itself. Add files with /add.", "cmd": "/add src/form.js"},
+        {"title": "Ask first, then change", "body": "A third-party Aider cheat sheet describes /ask (read-only questions, no edits) and /code (the normal editing mode), and suggests planning in /ask and then switching to /code. These commands come from that cheat sheet, not Aider's own usage page, so check them with /help.", "cmd": "/ask Where is the form submitted?\n/code Add the empty-name check."},
+        {"title": "Review what it did", "body": "Aider shows diffs of its changes and commits them to Git. /diff shows the last change.", "cmd": "/diff", "shot": "aider-diff"},
+        {"title": "Undo what you do not want", "body": "/undo reverts the last change Aider made.", "cmd": "/undo"},
+        {"title": "Run your tests through Aider", "body": "From the same cheat sheet: /run runs a command and feeds the output back; /test runs your configured test command.", "cmd": "/run npm test"}
+      ],
+      "commands": [
+        {"cmd": "/add <file>", "what": "Add a file so Aider can edit it"},
+        {"cmd": "/undo", "what": "Undo Aider's last change"},
+        {"cmd": "/model", "what": "Switch models in the chat"},
+        {"cmd": "/help <question>", "what": "Ask Aider how to use Aider"},
+        {"cmd": "/ask  /code  /architect", "what": "Chat modes: question only, normal editing, planner then editor (cheat sheet)"},
+        {"cmd": "/diff  /run  /test  /drop", "what": "Show last change, run a command, run tests, remove files from the chat (cheat sheet)"}
+      ],
+      "careful": [
+        "Aider commits for you. Start from a clean Git state so its commits are easy to spot and undo.",
+        "Ollama's default context is small and it silently drops what does not fit: raise it as in the earlier step."
+      ],
+      "sources": [
+        {"title": "Aider: usage", "url": "https://aider.chat/docs/usage"},
+        {"title": "Aider cheat sheet - ComputingForGeeks (third party)", "url": "https://computingforgeeks.com/aider-cheat-sheet/"}
+      ],
+      "checked": "2026-10-26"
+    },
+    "cline": {
+      "title": "Your first session with Cline",
+      "intro": "Cline is a panel inside VS Code. It reads your project, proposes edits and commands, and waits for your approval before acting (unless you turn on auto-approve).",
+      "first_task": "Use Plan mode to have it explain how to make a change, read the plan, then switch to Act.",
+      "prompts": [
+        "Plan: I want the settings page to remember the last tab. Which files are involved and what would you change?",
+        "Act: go ahead with the plan, one file at a time."
+      ],
+      "walkthrough": [
+        {"title": "Open the project and the Cline panel", "body": "Open your project folder in VS Code, then open Cline from its icon. It should already point at Ollama from the setup steps.", "shot": "cline-panel"},
+        {"title": "Start in Plan mode", "body": "Plan mode lets Cline read your code, search and discuss approaches, but not change files or run commands. Cline's docs suggest: plan, discuss the approach, then switch to Act when you are confident. For tiny fixes (a typo) you can go straight to Act.", "shot": "cline-plan"},
+        {"title": "Approve each action", "body": "In Act mode Cline asks you before reading files, editing files or running commands, unless the matching auto-approve setting is on. Read what it proposes before clicking approve."},
+        {"title": "Set safe auto-approve", "body": "Cline's docs recommend allowing only reading project files at first and leaving edits, commands, browser and MCP off until you need them. If you allow edits, use Checkpoints so you can roll back. YOLO mode approves everything and the docs call it dangerous."},
+        {"title": "Big jobs", "body": "For large cross-cutting changes, Cline's docs point to the /deep-planning command. Keep the conversation short and start a new task when it gets long: local models slow down as the context fills."}
+      ],
+      "commands": [
+        {"cmd": "Plan / Act", "what": "Plan: read and discuss only. Act: edit files and run commands (with your approval)"},
+        {"cmd": "/deep-planning", "what": "For large, multi-step changes (per Cline's docs)"},
+        {"cmd": "Checkpoints", "what": "Roll back after edits; turn on before Act"}
+      ],
+      "careful": [
+        "Do not turn on YOLO mode with a local model. Small models make more mistakes and YOLO removes your chance to catch them.",
+        "Use Cline's compact prompt setting from the setup steps: it helps small models."
+      ],
+      "sources": [
+        {"title": "Cline: Plan and Act", "url": "https://docs.cline.bot/features/plan-and-act"},
+        {"title": "Cline: Auto-approve", "url": "https://docs.cline.bot/features/auto-approve"}
+      ],
+      "checked": "2026-10-26"
+    },
+    "continue": {
+      "title": "Using Continue for as-you-type help",
+      "intro": "Continue shows grey suggestions as you type in VS Code or JetBrains. Press a key to accept one. It also has a chat panel.",
+      "first_task": "Turn on autocomplete, open a code file, and start writing a function.",
+      "prompts": [
+        "Start typing a function name and a comment describing it, then pause and see what appears.",
+        "Select a function and ask in the chat panel: what does this do?"
+      ],
+      "walkthrough": [
+        {"title": "Turn autocomplete on", "body": "Click the Continue button in the bottom-right status bar of your editor, or tick Enable Tab Autocomplete in your editor's settings. Your autocomplete model needs the autocomplete role in config.yaml (see the setup steps).", "shot": "continue-status"},
+        {"title": "Type and pause", "body": "Start writing code. A suggestion appears after a short pause."},
+        {"title": "Accept or reject", "body": "Tab accepts the whole suggestion. Esc rejects it. Ctrl/Cmd + Right arrow accepts one word at a time.", "cmd": "Tab = accept   Esc = reject   Ctrl/Cmd+Right = one word"},
+        {"title": "Ask for a suggestion", "body": "In VS Code, Ctrl/Cmd + Alt + Space asks for a suggestion right now, even after you dismissed one."},
+        {"title": "Use chat for questions", "body": "Continue also has Chat, Edit, Agent and Plan modes. Its docs name the shortcuts Ctrl/Cmd+L and Ctrl/Cmd+I and @ for adding context, but the pages I could read did not say what each does, so open Continue's own docs for those."}
+      ],
+      "commands": [
+        {"cmd": "Tab", "what": "Accept the suggestion"},
+        {"cmd": "Esc", "what": "Reject the suggestion"},
+        {"cmd": "Ctrl/Cmd + Right", "what": "Accept one word of the suggestion"},
+        {"cmd": "Ctrl/Cmd + Alt + Space", "what": "Ask for a suggestion now (VS Code)"}
+      ],
+      "careful": [
+        "If suggestions are slow or never appear, the model is too big for your computer: use the small Qwen2.5-Coder this page recommends, not a large model.",
+        "Ollama unloads idle models after 5 minutes, so the first suggestion after a break can lag."
+      ],
+      "sources": [
+        {"title": "Continue: autocomplete quick start", "url": "https://docs.continue.dev/ide-extensions/autocomplete/quick-start"}
+      ],
+      "checked": "2026-10-26"
+    },
+    "hermes": {
+      "title": "Your first session with Hermes Agent",
+      "intro": "Hermes is a terminal agent. You chat with it, it uses tools (files, commands) to do jobs, and it asks before running dangerous commands.",
+      "first_task": "Start a session, check it is using your local model, and give it one small, safe job.",
+      "prompts": [
+        "List the files in this folder and tell me what this project is.",
+        "Create a file notes.md with a short summary of what you found. Show me before you run any command.",
+        "/bg Review the README for mistakes and give me a list (this runs in a separate background session)"
+      ],
+      "walkthrough": [
+        {"title": "Start it", "body": "hermes starts the classic interface. hermes --tui starts the modern text interface. Resume your last session later with hermes -c.", "cmd": "hermes --tui", "shot": "hermes-start"},
+        {"title": "Check the model and context", "body": "/model shows or changes the model. /status shows session info. /context shows how much of the context window is used, which matters a lot with local models.", "cmd": "/model\n/status\n/context"},
+        {"title": "Give it a job", "body": "Type your request and press Enter. Alt+Enter, Ctrl+J or Shift+Enter add a new line. Start a line with ! to run a shell command yourself without asking the model, for example !git status."},
+        {"title": "Approvals", "body": "Commands that match dangerous patterns (such as rm -rf) go through an approval prompt. Hermes' CLI page does not describe a separate approval step for file edits (see its Security guide). Do not use --yolo or /yolo, which turns on auto-approve."},
+        {"title": "Interrupt or redirect", "body": "Ctrl+C on an empty prompt interrupts the agent (it clears a typed draft first). /stop cancels the turn. Typing and pressing Enter mid-turn redirects the agent by default."},
+        {"title": "Long jobs", "body": "/bg <prompt> runs a prompt in a separate background session. When the context bar is nearly full (95% or more), run /compress."}
+      ],
+      "commands": [
+        {"cmd": "/model", "what": "Show or change the model"},
+        {"cmd": "/status  /context  /usage", "what": "Session info, context-window use, usage and cost"},
+        {"cmd": "/tools", "what": "List the tools Hermes can use"},
+        {"cmd": "/bg <prompt>", "what": "Run a prompt in a background session"},
+        {"cmd": "/stop", "what": "Cancel the current turn"},
+        {"cmd": "/compress", "what": "Shrink the context when the bar is nearly full"},
+        {"cmd": "/title <name>", "what": "Name the session so you can resume it by name"},
+        {"cmd": "hermes -c", "what": "Resume the latest session"},
+        {"cmd": "hermes doctor", "what": "Diagnose setup problems"}
+      ],
+      "careful": [
+        "A first reply can take minutes on a slow computer while the model reads Hermes' instructions: wait before assuming it is stuck.",
+        "Hermes needs at least 64K context: if answers wander, check /context and that you are using the 64K copy of the model from the setup steps."
+      ],
+      "sources": [
+        {"title": "Hermes: using the CLI day to day", "url": "https://hermes-agent.nousresearch.com/docs/user-guide/cli"},
+        {"title": "Hermes: local Ollama setup", "url": "https://hermes-agent.nousresearch.com/docs/guides/local-ollama-setup"}
+      ],
+      "checked": "2026-10-26"
+    },
+    "open-webui": {
+      "title": "Using Open WebUI, including chatting with your documents",
+      "intro": "Open WebUI is a chat page in your browser. You pick a model, chat, and can attach your own documents so the model answers from them.",
+      "first_task": "Chat once, then upload one document and ask a question about it.",
+      "prompts": [
+        "Summarize the attached document in five bullet points.",
+        "According to the document, what are the deadlines?",
+        "Quote the part of the document that supports that answer."
+      ],
+      "walkthrough": [
+        {"title": "Open it and pick the model", "body": "Go to the address from the setup (http://localhost:3000 for Docker) and choose your model at the top of a new chat.", "shot": "openwebui-chat"},
+        {"title": "Upload a document", "body": "Open Workspace, then Documents, and upload your file. (Open WebUI's docs also describe Knowledge collections under Workspace > Knowledge for groups of documents.)", "shot": "openwebui-documents"},
+        {"title": "Reference it in a chat", "body": "In a chat, type # and pick the document from the suggestions that appear above the message box. A document icon appears above the message box when it is attached. You can also start a prompt with # and a web address to bring in a web page."},
+        {"title": "Raise the context length", "body": "Open WebUI's docs warn that on graphics cards under 24 GB, Ollama's default context is 4096 tokens, which can leave retrieved text unused. In Settings > Admin > Models, click Edit on your model, open Advanced Params and raise the context length: at least 8192, and more than 16,000 is better for web pages.", "shot": "openwebui-context"},
+        {"title": "If answers ignore your document", "body": "Check the context length above first. The docs also explain that knowledge attached to a model (rather than to the chat) depends on its function-calling setting; attaching the knowledge in the chat is the simplest fix."}
+      ],
+      "commands": [
+        {"cmd": "# (in a message)", "what": "Reference an uploaded document or a web address"},
+        {"cmd": "Workspace > Documents", "what": "Upload files"},
+        {"cmd": "Workspace > Knowledge", "what": "Collections of documents you can attach"},
+        {"cmd": "Settings > Admin > Models > Edit > Advanced Params", "what": "Raise the context length"}
+      ],
+      "careful": [
+        "Models answer from what they retrieve, so check important facts against the document itself.",
+        "Complex files such as DOCX parse better in a normal chat than in Temporary Chat (per the docs)."
+      ],
+      "sources": [
+        {"title": "Open WebUI: chatting with documents (RAG)", "url": "https://docs.openwebui.com/features/chat-conversations/rag"}
+      ],
+      "checked": "2026-10-26"
+    }
+  }
+}

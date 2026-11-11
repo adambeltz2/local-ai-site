@@ -1,0 +1,7 @@
+{
+  "name": "local-ai",
+  "private": true,
+  "description": "Test dependencies only: the page itself has no dependencies.",
+  "scripts": { "test": "node tests/page.test.js && node tests/features.test.js" },
+  "devDependencies": { "jsdom": "^24.0.0" }
+}

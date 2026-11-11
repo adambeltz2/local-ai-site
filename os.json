@@ -1,0 +1,117 @@
+{
+ "about": "Evidence behind the operating-system advice. Numbers are from the named sources and are reports, not measurements on your machines. The page's own calculation (how much memory a lighter OS would free and whether the recommendation changes) uses the page's fit model.",
+ "linux_reserve_gb": 2,
+ "facts": {
+  "speed": {
+   "text": "Reports put native Linux about 5 to 25 percent faster than Windows for the same model and graphics card, with the gap larger for big or partly CPU-run models. The only direct comparison found says 22 percent faster (GPU not named); another review says there is no widely cited controlled study and calls 5 to 15 percent a rough consensus. For small models on a strong card the difference may not be noticeable.",
+   "src": [
+    "kunal",
+    "bestgpu"
+   ]
+  },
+  "wsl": {
+   "text": "Running Ollama inside WSL2 (Linux inside Windows) measured 10 to 13 percent slower than Ollama running directly on Windows in one 2024 test (RTX 4080, a 3B model, an old Ollama version). Another review says WSL2 is within a few percent of native Linux, and that WSL2 by default gets only half of your RAM unless you change .wslconfig.",
+   "src": [
+    "quickinference",
+    "bestgpu"
+   ]
+  },
+  "vram": {
+   "text": "Windows' desktop uses roughly 200 to 500 MB of graphics-card memory (reported, not measured). That is marginal on a 24 GB card and matters on a 6 to 8 GB card.",
+   "src": [
+    "bestgpu",
+    "kunal"
+   ]
+  },
+  "ram": {
+   "text": "Idle memory use is reported at roughly 3.5 to 4 GB on Windows versus 0.3 to 0.5 GB for headless Linux (no method given; check Task Manager yourself). It matters most on machines that run models from system RAM.",
+   "src": [
+    "bestgpu"
+   ]
+  },
+  "nvidia": {
+   "text": "Ollama supports NVIDIA cards with compute capability 5.0 or higher and driver 550 or newer on both Windows and Linux: RTX 20, 30, 40 and 50 series are supported.",
+   "src": [
+    "ollama-gpu"
+   ]
+  },
+  "amd": {
+   "text": "Ollama's AMD support differs by system: on Windows it covers only the RX 7000 series and Radeon PRO W7500 to W7900; on Linux it also covers RX 6000 and 9000 series and more. If you have an AMD card, Linux gives you more chance of GPU use.",
+   "src": [
+    "ollama-gpu"
+   ]
+  },
+  "apple": {
+   "text": "On Apple silicon Ollama uses the Mac's graphics (Metal) and the unified memory, so macOS is the platform to use.",
+   "src": [
+    "ollama-gpu",
+    "kunal"
+   ]
+  },
+  "server": {
+   "text": "For a machine that runs the model all the time for other computers, one review recommends Linux, which avoids forced updates and leaves more memory for the model.",
+   "src": [
+    "bestgpu"
+   ]
+  },
+  "power": {
+   "text": "No reliable evidence that Linux uses less power. Forum readings go both ways and mostly trace to drivers and settings: one user's RTX 3090 drew about 110 W at the Windows desktop until a clean driver reinstall (about 190 W total fell to about 80 W), while others report NVIDIA cards drawing more on Linux (about 27 W vs 9 W when browsing on a GTX 1660 Ti). These are single-machine reports, not controlled tests.",
+   "src": [
+    "endeavour-power",
+    "nvidia-power"
+   ]
+  },
+  "server_win": {
+   "text": "On Windows, updates restart the PC by themselves outside 'active hours' (default 8 AM to 5 PM, at most 18 hours long), and the setting that blocks restarts while someone is signed in is one Microsoft says can mean updates never finish. Ollama on Windows starts when you sign in, not when the PC boots, so after an automatic restart it will not serve other computers until someone signs in (or the PC signs in automatically).",
+   "src": [
+    "ms-restart",
+    "ollama-faq"
+   ]
+  },
+  "server_net": {
+   "text": "By default Ollama listens only on the computer itself (127.0.0.1). To let other computers use it, set OLLAMA_HOST to 0.0.0.0:11434 on the serving machine (on Windows: quit Ollama, edit your account's environment variables, start Ollama again).",
+   "src": [
+    "ollama-faq"
+   ]
+  }
+ },
+ "tools": {
+  "opencode": "opencode's docs recommend WSL (Windows' built-in Linux) on Windows; native options are npm, Chocolatey and Scoop.",
+  "hermes": "Hermes installs natively on Windows (PowerShell), on Linux or macOS, or inside WSL2."
+ },
+ "sources": {
+  "kunal": {
+   "title": "Linux vs Windows vs macOS for Local AI - kunalganglani.com (Jul 2026, updated Sep 2026)",
+   "url": "https://www.kunalganglani.com/blog/local-ai-linux-windows-macos"
+  },
+  "bestgpu": {
+   "title": "Windows vs Linux for Local LLM - bestgpuforllm.com (Sep 2026; has affiliate links)",
+   "url": "https://bestgpuforllm.com/articles/windows-vs-linux-for-local-llm/"
+  },
+  "quickinference": {
+   "title": "Ollama Speed Test: Windows vs Linux (in WSL2) - quickinference.com (Nov 2024)",
+   "url": "https://www.quickinference.com/2024/11/03/ollama-speed-test-windows-vs-linux-in-wsl2/"
+  },
+  "ollama-gpu": {
+   "title": "Ollama docs: GPU support",
+   "url": "https://docs.ollama.com/gpu"
+  },
+  "endeavour-power": {
+   "title": "Windows vs Linux idle power consumption - EndeavourOS forum (Jun 2021, one user's wall readings)",
+   "url": "https://forum.endeavouros.com/t/windows-vs-linux-idle-power-consumption/15138"
+  },
+  "nvidia-power": {
+   "title": "Power consumption big discrepancy: Linux vs. Windows - NVIDIA developer forum (Oct 2022, user reports)",
+   "url": "https://forums.developer.nvidia.com/t/power-consumption-big-discrepancy-for-relatively-idle-scenarios-linux-vs-windows/231282"
+  },
+  "ms-restart": {
+   "title": "Manage device restarts after updates - Microsoft Learn",
+   "url": "https://learn.microsoft.com/windows/deployment/update/waas-restart"
+  },
+  "ollama-faq": {
+   "title": "Ollama docs: FAQ",
+   "url": "https://docs.ollama.com/faq"
+  }
+ },
+ "checked": "2026-11-10"
+}

@@ -1,0 +1,1208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local AI Model Matrix</title>
+<meta name="description" content="Sortable, filterable matrix of free, open-weight AI models you can run locally, with fit estimates for your own machines.">
+<style>
+:root{
+  --bg:#ffffff; --fg:#14181f; --mut:#566070; --line:#dde2ea; --card:#f5f7fa; --acc:#2457d6; --acc-fg:#ffffff;
+  --ok-bg:#dff3e7; --ok-fg:#105c36; --warn-bg:#fdf0d2; --warn-fg:#7a4d00; --hy-bg:#e3ebfb; --hy-fg:#1c3f9c; --no-bg:#f3e0de; --no-fg:#8c1f18;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0f1218; --fg:#e7eaf0; --mut:#9aa4b4; --line:#262d39; --card:#171c25; --acc:#7da2ff; --acc-fg:#0f1218;
+    --ok-bg:#12301f; --ok-fg:#7fd8a6; --warn-bg:#33270a; --warn-fg:#f0c261; --hy-bg:#17264a; --hy-fg:#9db8ff; --no-bg:#3a1917; --no-fg:#f2a29c;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:16px}
+h1{font-size:1.5rem;margin:0 0 4px}
+h2{font-size:1.05rem;margin:0 0 8px}
+.sub{color:var(--mut);margin:0 0 16px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+label{font-size:.85rem;color:var(--mut);display:block;margin-bottom:4px}
+select,input[type=search]{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:40px;max-width:100%}
+input[type=search]{width:100%}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.grow{flex:1 1 220px}
+.specs{color:var(--mut);font-size:.9rem;margin:10px 0 0}
+.picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:12px}
+.pick{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px}
+.pick h3{margin:0 0 6px;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
+.pick .line{font-size:.9rem;margin:3px 0}
+.pick .tag{color:var(--mut);font-size:.8rem}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:999px;padding:6px 12px;min-height:34px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--acc);color:var(--acc-fg);border-color:var(--acc)}
+.btn{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;padding:8px 12px;min-height:40px;cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.count{color:var(--mut);font-size:.85rem;margin:0 0 8px}
+.tablewrap{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:860px}
+th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{position:sticky;top:0;background:var(--card);z-index:2;font-size:.8rem;white-space:nowrap}
+th button{font:inherit;font-weight:600;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+th button .arrow{color:var(--acc);margin-left:4px}
+td:first-child,th:first-child{position:sticky;left:0;background:var(--bg)}
+th:first-child{background:var(--card);z-index:3}
+td.name .n{font-weight:600}
+td.name .f,.small{color:var(--mut);font-size:.8rem}
+.badge{display:inline-block;border-radius:6px;padding:2px 8px;font-size:.78rem;font-weight:600;white-space:nowrap}
+.b-gpu{background:var(--ok-bg);color:var(--ok-fg)}
+.b-tight{background:var(--warn-bg);color:var(--warn-fg)}
+.b-hybrid,.b-cpu{background:var(--hy-bg);color:var(--hy-fg)}
+.b-no{background:var(--no-bg);color:var(--no-fg)}
+.use{display:inline-block;border:1px solid var(--line);border-radius:6px;padding:1px 6px;margin:0 4px 4px 0;font-size:.75rem;color:var(--mut)}
+code{font:.82rem ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--card);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+.empty{padding:24px;text-align:center;color:var(--mut)}
+details{margin-top:14px}
+summary{cursor:pointer;font-weight:600}
+.stale{background:#fff3cd;color:#664d03;border:1px solid #ffda6a;border-radius:8px;padding:8px 12px;margin:8px 0}
+.stale[hidden]{display:none}
+footer{color:var(--mut);font-size:.85rem;margin-top:18px}
+footer a{color:var(--acc)}
+.tasks{display:flex;flex-wrap:wrap;gap:8px}
+.tasks .chip{font-size:.92rem;padding:8px 14px;min-height:40px}
+.blurb{color:var(--mut);margin:10px 0 0}
+.rec{background:var(--bg);border:2px solid var(--acc);border-radius:12px;padding:14px;margin-top:14px}
+.rec h3{margin:0;font-size:1.3rem}
+.kicker{font-size:.76rem;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin-bottom:4px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.rec p{margin:6px 0}
+.alts{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin-top:12px}
+.alt{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px}
+.alt .nm{font-weight:600}
+.alt p{margin:4px 0}
+.howto{margin:16px 0 0;font-size:1rem}
+.steps{margin:8px 0 0;padding-left:22px}
+.steps li{margin:0 0 14px}
+.cmdrow{display:flex;gap:8px;align-items:stretch;margin-top:6px;flex-wrap:wrap}
+pre.cmd{flex:1 1 240px;margin:0;padding:8px 10px;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:auto;font:.85rem ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-all}
+.note{background:var(--warn-bg);color:var(--warn-fg);border-radius:8px;padding:8px 10px;margin:10px 0 0;font-size:.9rem}
+.toobig{color:var(--mut);font-size:.9rem;margin:12px 0 0}
+.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:8px}
+.vcol{border-radius:10px;padding:12px;border:2px solid var(--line)}
+.vcol.use{border-color:var(--ok-fg);background:var(--ok-bg)}
+.vcol.not{border-color:var(--no-fg);background:var(--no-bg)}
+.vcol.use .kicker{color:var(--ok-fg);font-weight:700}
+.vcol.not .kicker{color:var(--no-fg);font-weight:700}
+.vcol h3{margin:2px 0 6px;font-size:1.25rem}
+.vcol p{margin:0}
+.example{margin:8px 0 0;font-size:.92rem}
+.cmp{margin-top:14px}
+.cmp summary{font-weight:600}
+.cmpwrap{overflow-x:auto;margin-top:8px;border:1px solid var(--line);border-radius:10px}
+table.compare{width:100%;min-width:560px;border-collapse:collapse;font-size:.9rem}
+table.compare th,table.compare td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;position:static}
+table.compare thead th{background:var(--card);position:static}
+table.compare th.rowh{width:150px;color:var(--mut);font-weight:600;background:var(--card)}
+table.compare .cur{background:var(--ok-bg)}
+table.compare thead th.cur{background:var(--ok-bg);color:var(--ok-fg)}
+.cmpnote{color:var(--mut);font-size:.9rem;margin:8px 0 0}
+[hidden]{display:none!important}
+.osadv{margin:14px 0}
+.stack{margin:14px 0}
+.grp{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0;background:var(--bg)}
+.gname{font-size:.8rem;font-weight:600;color:var(--mut);margin-bottom:6px}
+.layer{display:grid;grid-template-columns:4.6rem minmax(0,1fr);overflow-wrap:anywhere;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.layer:first-of-type{border-top:0}
+.lname{font-size:.8rem;color:var(--acc);font-weight:600}
+.arrow{text-align:center;color:var(--mut);font-size:.85rem;padding:2px 0;word-break:break-all}
+.clients{margin-top:16px}
+.tut h5{margin:14px 0 6px;font-size:.95rem}
+.shot{margin:8px 0 0}
+.shot img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px}
+.shot figcaption{color:var(--mut);font-size:.85rem}
+.about{margin-top:16px;padding:12px 14px;border:1px solid var(--line,#ddd);border-radius:8px}
+.about h3{margin:0 0 8px;font-size:15px}
+.about dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:0 0 8px}
+.about dt{font-weight:600}.about dd{margin:0}
+details.more,details.browse,details.tut,details.evid{margin-top:16px}
+details.browse>summary{font-size:1.05rem}
+.tips{color:var(--mut);font-size:.9rem;margin:10px 0 0;padding-left:20px}
+.sr{position:absolute;left:-9999px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Local AI Model Matrix</h1>
+  <p class="sub" id="sub"></p>
+  <p class="stale" id="stale" hidden></p>
+  <noscript><p>This page needs JavaScript to sort and filter the table.</p></noscript>
+
+  <section class="panel" aria-labelledby="mh">
+    <h2 id="mh">Step 1: your machine</h2>
+    <div class="row">
+      <div class="grow">
+        <label for="machine">Machine</label>
+        <select id="machine"></select>
+      </div>
+      <div>
+        <label for="os">Instructions for</label>
+        <select id="os">
+          <option value="windows">Windows</option>
+          <option value="mac">macOS</option>
+          <option value="android">Android</option>
+          <option value="linux">Linux</option>
+        </select>
+      </div>
+    </div>
+    <p class="specs" id="specs"></p>
+    <p class="specs small" id="mnotes"></p>
+    <details class="more" id="addm">
+      <summary>Add your own machine (saved only in this browser)</summary>
+      <p class="small">Enter what your computer has. Nothing is sent anywhere: machines are stored in this browser and can be exported below. Find your specs in Windows Settings > System > About, macOS About This Mac, or <code>lscpu</code> and <code>free -h</code> on Linux.</p>
+      <form id="mform" autocomplete="off">
+        <div class="row">
+          <div class="grow"><label for="m-name">Name</label><input id="m-name" maxlength="80" required></div>
+          <div class="grow"><label for="m-cpu">Processor</label><input id="m-cpu" maxlength="120" required></div>
+          <div><label for="m-os">Operating system</label><select id="m-os"><option value="windows">Windows</option><option value="mac">macOS</option><option value="linux">Linux</option><option value="android">Android</option></select></div>
+        </div>
+        <div class="row">
+          <div><label for="m-ram">RAM (GB)</label><input id="m-ram" type="number" min="1" max="4096" step="any" required></div>
+          <div><label for="m-mts">RAM speed (MT/s)</label><input id="m-mts" type="number" min="100" step="any" placeholder="e.g. 3200"></div>
+          <div><label for="m-ch">Memory channels</label><select id="m-ch"><option value="1">1</option><option value="2" selected>2 (most laptops and desktops)</option><option value="4">4</option><option value="8">8</option></select></div>
+          <div><label for="m-bw">or RAM bandwidth (GB/s)</label><input id="m-bw" type="number" min="1" step="any" placeholder="if you know it"></div>
+        </div>
+        <p class="small">Bandwidth sets how fast the model runs. If you leave bandwidth blank it is worked out as speed x 8 bytes x channels (DDR4-3200 with 2 channels is about 51 GB/s). Apple silicon: tick the box and type the memory bandwidth from Apple's spec sheet.</p>
+        <div class="row">
+          <div><label><input id="m-uni" type="checkbox"> Apple silicon (unified memory)</label></div>
+          <div class="grow"><label for="m-gpu">Graphics card (optional)</label><input id="m-gpu" maxlength="120"></div>
+          <div><label for="m-vram">Card memory (GB)</label><input id="m-vram" type="number" min="0" max="1024" step="any" value="0"></div>
+          <div><label for="m-vbw">Card bandwidth (GB/s)</label><input id="m-vbw" type="number" min="1" step="any" placeholder="from the card's spec sheet"></div>
+        </div>
+        <div class="row">
+          <div><button class="btn" type="submit">Add machine</button></div>
+          <div><button class="btn" type="button" id="m-del" hidden>Remove selected machine</button></div>
+        </div>
+        <p class="small" id="m-status" role="status"></p>
+      </form>
+      <details class="more"><summary>Export or import my machines</summary>
+        <textarea id="m-json" rows="6" style="width:100%" aria-label="Machines as JSON"></textarea>
+        <div class="row"><div><button class="btn" type="button" id="m-export">Show my machines</button></div><div><button class="btn" type="button" id="m-import">Import from the box</button></div></div>
+      </details>
+    </details>
+  </section>
+
+  <section class="panel" aria-labelledby="th">
+    <h2 id="th">Step 2: what do you want to do?</h2>
+    <div class="tasks" id="tasks" role="group" aria-labelledby="th"></div>
+    <p class="blurb" id="blurb"></p>
+    <p class="example" id="example"></p>
+    <div id="compare"></div>
+    <div id="result" aria-live="polite"></div>
+  </section>
+
+  <details class="browse" id="browse">
+  <summary>Browse all models (the full detailed table)</summary>
+
+  <section class="panel" aria-labelledby="fh">
+    <h2 id="fh">Filter</h2>
+    <div class="row">
+      <div class="grow">
+        <label for="q">Search name, family or Ollama tag</label>
+        <input type="search" id="q" autocomplete="off">
+      </div>
+      <div>
+        <label for="fit">Fit on this machine</label>
+        <select id="fit">
+          <option value="all">All models</option>
+          <option value="gpu">Runs on GPU</option>
+          <option value="run">Runs (GPU or CPU offload)</option>
+        </select>
+      </div>
+      <div>
+        <label for="lic">License</label>
+        <select id="lic">
+          <option value="all">Any</option>
+          <option value="open">Permissive (Apache / MIT)</option>
+          <option value="other">Other / unstated</option>
+        </select>
+      </div>
+      <div>
+        <label for="conf">Confirmed details only</label>
+        <select id="conf">
+          <option value="all">Show all</option>
+          <option value="yes">Hide models with a ? date or license</option>
+        </select>
+      </div>
+      <button class="btn" id="reset" type="button">Reset</button>
+    </div>
+    <div style="margin-top:12px">
+      <label id="uh">Use case (pick any)</label>
+      <div class="chips" id="chips" role="group" aria-labelledby="uh"></div>
+    </div>
+  </section>
+
+  <p class="count" id="count" aria-live="polite"></p>
+  <div class="tablewrap">
+    <table id="tbl">
+      <thead><tr id="head"></tr></thead>
+      <tbody id="body"></tbody>
+    </table>
+    <div class="empty" id="empty" hidden>No models match these filters.</div>
+  </div>
+  </details>
+
+  <details>
+    <summary>How the pieces fit together (what am I setting up?)</summary>
+    <ol>
+      <li><b>Engine: Ollama.</b> A program that runs on your computer, loads a model into memory and answers requests at <code>http://localhost:11434</code>. Everything below assumes Ollama. Nothing here needs the internet after the model is downloaded.</li>
+      <li><b>Model.</b> The file Ollama downloads, picked by the recommendation for your machine and task (<code>ollama run &lt;tag&gt;</code>).</li>
+      <li><b>Settings.</b> Mainly the <i>context length</i>: how much text the model can see at once. Ollama's default is small, and agent tools need much more.</li>
+      <li><b>Tool.</b> (Each recommendation shows your own version of this stack as a diagram under "Connect a tool".)  The thing you actually use: a chat page (Open WebUI), an editor extension (Continue, Cline) or a terminal agent (opencode, Aider). The tool is optional for plain chat and required for working on code. Each tool is just a different front door to the same Ollama address, so you can try several with one model.</li>
+    </ol>
+    <p class="small">LM Studio is an alternative engine: it has its own app and model catalog, and tools can connect to it at <code>http://localhost:1234/v1</code> instead of Ollama's address. llama.cpp is another. The model names and commands on this page are written for Ollama.</p>
+  </details>
+  <details>
+    <summary>How the fit and speed estimates work</summary>
+    <p>These are rough planning numbers, not benchmarks.</p>
+    <ul>
+      <li><b>Memory needed</b> is the model's footprint at about 8K context. Where a source gave one it is used; otherwise it is the Q4 weights size plus a KV-cache allowance (0.5 GB under 3 GB of weights, 1 GB under 8 GB, 1.5 GB above).</li>
+      <li><b>GPU</b>: fits in VRAM with 0.5 GB reserved for the display and driver. <b>GPU (tight)</b>: fits only if you use all of the VRAM. <b>CPU offload</b>: spills into system RAM (5 GB kept free for the OS unless a machine sets <code>os_reserve_gb</code>) and runs slower. <b>CPU only</b>: the machine has no usable GPU, so the whole model runs from system RAM. <b>Too large</b>: does not fit even with offload.</li>
+      <li><b>Est. tok/s</b> assumes generation is memory-bandwidth bound: bandwidth divided by the bytes read per token, times 0.6 for real-world efficiency. For mixture-of-experts models only the active parameters count, then the result is halved as a conservative allowance for expert-routing overhead (an assumption, not a measurement). Offloaded layers are billed at system-RAM bandwidth. Prompt processing and your real runtime will differ, and very small models are still optimistic.</li>
+      <li><b>Task recommendations</b> walk each task's quality-ranked list (in <code>tasks.json</code>) and pick the highest-ranked model that meets the task's speed target: 30 tok/s for editor autocomplete, 10 for chat, reasoning and documents, 8 for agents, vision and automation. "Higher quality, slower" is a better-ranked model that runs at 3+ tok/s but misses the target. "Faster option" is a lower-ranked model that fits your GPU and is at least 1.5x faster. Models that are not in Ollama are never recommended. The ranking itself is editorial judgment informed by the cited sources, with benchmark numbers quoted only where a source gave one.</li>
+    </ul>
+  </details>
+
+  <footer>
+    <p id="srcs"></p>
+    <p>Data is compiled from the sources above and may be out of date or wrong. These are estimates, not guarantees: real speed depends on your drivers, settings and other programs. Check the model card, license and Ollama tag before you download. A <b>?</b> next to a license means it was not confirmed from a fetched source. Edit <code>models.json</code>, <code>machines.json</code> and <code>tasks.json</code>, then run <code>python3 build.py</code>.</p>
+    <p>Local AI Model Matrix version <span id="ver"></span>. "checked" is the date a source was last read for this page, not the date the source was published.</p>
+  </footer>
+</div>
+
+<script>
+"use strict";
+const DATA = /*__MODELS_JSON__*/null;
+const MACHINES = /*__MACHINES_JSON__*/null;
+const REMOTE_URL = "https://raw.githubusercontent.com/adambeltz2/local-ai-site/main/data.json";
+const safeUrl = u => (typeof u === "string" && /^https:\/\//i.test(u)) ? u : null;
+const CUSTOM_KEY = "localai.machines.v1";
+function loadCustomMachines(){
+  try {
+    const raw = localStorage.getItem(CUSTOM_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.filter(validMachine) : [];
+  } catch (e) { return []; }
+}
+function saveCustomMachines(){
+  try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(MACHINES.filter(m => m.custom))); return true; } catch (e) { return false; }
+}
+function validMachine(m){
+  return m && typeof m.id === "string" && typeof m.name === "string" && m.name.length <= 80 && typeof m.cpu === "string"
+    && Number.isFinite(m.ram_gb) && m.ram_gb > 0 && m.ram_gb <= 4096
+    && Number.isFinite(m.ram_bandwidth_gbps) && m.ram_bandwidth_gbps > 0
+    && (m.vram_gb == null || (Number.isFinite(m.vram_gb) && m.vram_gb >= 0));
+}
+loadCustomMachines().forEach(m => { if (!MACHINES.some(x => x.id === m.id)) MACHINES.push(Object.assign({}, m, {custom:true})); });
+const BUILD = /*__VERSION_JSON__*/null;
+const CLIENTS = /*__CLIENTS_JSON__*/null;
+const OSDATA = /*__OS_JSON__*/null;
+const TUTORIALS = /*__TUTORIALS_JSON__*/null;
+const SCREENS = /*__SCREENS_JSON__*/null;
+const TASKS = /*__TASKS_JSON__*/null;
+
+const USES = {chat:"Chat", coding:"Coding", reasoning:"Reasoning", vision:"Vision", agents:"Agents / tools", ocr:"OCR", embeddings:"Embeddings", speech:"Speech"};
+const FIT_LABEL = {gpu:"GPU", tight:"GPU (tight)", hybrid:"CPU offload", cpu:"CPU only", no:"Too large"};
+const FIT_RANK = {gpu:0, tight:1, hybrid:2, cpu:2, no:3};
+const EFF = 0.6;
+const SLOW_TPS = 3;
+const MOE_EFF = 0.5;
+const GPU_RESERVE = 0.5;
+const OS_RESERVE = 5;
+
+const state = {q:"", uses:new Set(), fit:"all", lic:"all", conf:"all", sort:{key:"fit", dir:1}, machine:MACHINES[0].id, task:TASKS.tasks[0].id, os:MACHINES[0].os_family || "windows", client:null};
+const modelById = Object.fromEntries(DATA.models.map(m => [m.id, m]));
+
+function footprint(m){
+  if (m.mem_gb != null) return m.mem_gb;
+  const o = m.size_gb < 3 ? 0.5 : (m.size_gb < 8 ? 1.0 : 1.5);
+  return m.size_gb + o;
+}
+function weights(m){ return m.size_gb != null ? m.size_gb : m.mem_gb * 0.85; }
+function isEmbed(m){ return m.uses.length === 1 && (m.uses[0] === "embeddings" || m.uses[0] === "speech"); } // no tokens/s estimate for these
+
+function evaluate(mc, m){
+  const need = footprint(m);
+  const unified = !!mc.unified_memory;
+  const ramTotal = mc.ram_usable_gb != null ? mc.ram_usable_gb : mc.ram_gb;
+  let gpuAvail, ramAvail, bwG, bwC;
+  if (unified){
+    gpuAvail = mc.ram_gb * 0.7; ramAvail = 0; bwG = mc.ram_bandwidth_gbps; bwC = mc.ram_bandwidth_gbps;
+  } else {
+    gpuAvail = mc.vram_gb ? Math.max(0, mc.vram_gb - GPU_RESERVE) : 0;
+    ramAvail = Math.max(0, ramTotal - (mc.os_reserve_gb != null ? mc.os_reserve_gb : OS_RESERVE));
+    bwG = mc.vram_bandwidth_gbps || 0; bwC = mc.ram_bandwidth_gbps || 1;
+  }
+  let status;
+  if (gpuAvail > 0 && need <= gpuAvail) status = "gpu";
+  else if (gpuAvail > 0 && !unified && need <= mc.vram_gb) status = "tight";
+  else if (need <= gpuAvail + ramAvail) status = gpuAvail > 0 ? "hybrid" : "cpu";
+  else status = "no";
+
+  let tps = null;
+  if (status !== "no" && !isEmbed(m)){
+    const w = weights(m);
+    const bytes = (m.active_b && m.params_b) ? w * (m.active_b / m.params_b) : w;
+    const f = (status === "gpu" || status === "tight") ? 1 : (gpuAvail > 0 ? Math.min(1, gpuAvail / need) : 0);
+    const t = bytes * ((bwG ? f / bwG : 0) + (1 - f) / bwC);
+    tps = t > 0 ? EFF / t : null;
+    if (tps != null && m.arch === "moe") tps *= MOE_EFF;
+  }
+  let measured = false;
+  if (status !== "no" && mc.measured && m.tag && Number.isFinite(mc.measured[m.tag])){ tps = mc.measured[m.tag]; measured = true; }
+  return {m, need, status, tps, measured, cap: gpuAvail + ramAvail};
+}
+
+function fmtParams(m){
+  const f = v => v < 1 ? Math.round(v * 1000) + "M" : (Number.isInteger(v) ? v : +v.toFixed(2)) + "B";
+  let s = f(m.params_b);
+  if (m.active_b && m.active_b !== m.params_b) s += " (" + f(m.active_b) + (m.arch === "moe" ? " active)" : " eff.)");
+  return s;
+}
+function fmtCtx(k){ return k == null ? "—" : (k < 1 ? Math.round(k * 1000) + " tok" : k + "K"); }
+function fmtTps(e){ return e.tps == null ? "—" : (e.measured ? "" : "~") + (e.tps >= 10 ? Math.round(e.tps) : e.tps.toFixed(1)) + (e.measured ? " (measured)" : ""); }
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtRel(m){
+  if (!m.released) return "Not stated";
+  const p = m.released.split("-");
+  const out = p.length === 3 ? MONTHS[+p[1]-1] + " " + (+p[2]) + ", " + p[0] : p.length === 2 ? MONTHS[+p[1]-1] + " " + p[0] : p[0];
+  return out + (m.rel_ok ? "" : " ?");
+}
+function licClass(m){ return m.license && /apache|mit/i.test(m.license) ? "open" : "other"; }
+
+function el(tag, props, kids){
+  const n = document.createElement(tag);
+  if (props) for (const k in props){
+    if (k === "class") n.className = props[k];
+    else if (k === "text") n.textContent = props[k];
+    else n.setAttribute(k, props[k]);
+  }
+  (kids || []).forEach(c => n.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
+  return n;
+}
+const machine = () => MACHINES.find(x => x.id === state.machine);
+
+const COLS = [
+  {key:"name", label:"Model"},
+  {key:"uses", label:"Use cases", nosort:true},
+  {key:"maker", label:"Maker"},
+  {key:"released", label:"Released"},
+  {key:"params", label:"Params"},
+  {key:"need", label:"Needs (GB)"},
+  {key:"ctx", label:"Context"},
+  {key:"license", label:"License"},
+  {key:"fit", label:"Fit"},
+  {key:"tps", label:"Est. tok/s"},
+  {key:"tag", label:"Ollama tag", nosort:true}
+];
+
+function sortVal(e, key){
+  const m = e.m;
+  switch(key){
+    case "name": return m.name.toLowerCase();
+    case "maker": return m.maker ? m.maker.toLowerCase() : null;
+    case "released": return m.released || null;
+    case "params": return m.params_b;
+    case "need": return e.need;
+    case "ctx": return m.ctx_k;
+    case "license": return m.license ? m.license.toLowerCase() : null;
+    case "fit": return FIT_RANK[e.status];
+    case "tps": return e.tps;
+  }
+  return null;
+}
+function compare(a, b){
+  const {key, dir} = state.sort;
+  const va = sortVal(a, key), vb = sortVal(b, key);
+  if (va == null && vb == null) return 0;
+  if (va == null) return 1;
+  if (vb == null) return -1;
+  let r = va < vb ? -1 : va > vb ? 1 : 0;
+  if (key === "fit" && r === 0){
+    const ta = a.tps == null ? -1 : a.tps, tb = b.tps == null ? -1 : b.tps;
+    return tb - ta;
+  }
+  return r * dir;
+}
+
+function renderHead(){
+  const tr = document.getElementById("head");
+  tr.textContent = "";
+  COLS.forEach(c => {
+    const th = el("th", {scope:"col"});
+    if (c.nosort){ th.textContent = c.label; }
+    else {
+      const active = state.sort.key === c.key;
+      th.setAttribute("aria-sort", active ? (state.sort.dir === 1 ? "ascending" : "descending") : "none");
+      const b = el("button", {type:"button", text:c.label});
+      if (active) b.appendChild(el("span", {class:"arrow", text: state.sort.dir === 1 ? "▲" : "▼"}));
+      b.addEventListener("click", () => {
+        if (state.sort.key === c.key) state.sort.dir *= -1;
+        else { state.sort.key = c.key; state.sort.dir = (c.key === "params" || c.key === "ctx" || c.key === "tps") ? -1 : 1; }
+        render();
+      });
+      th.appendChild(b);
+    }
+    tr.appendChild(th);
+  });
+}
+
+function matches(e){
+  const m = e.m;
+  if (state.q){
+    const hay = (m.name + " " + m.family + " " + (m.tag || "") + " " + m.id).toLowerCase();
+    if (!state.q.toLowerCase().split(/\s+/).every(t => hay.includes(t))) return false;
+  }
+  if (state.uses.size && !m.uses.some(u => state.uses.has(u))) return false;
+  if (state.lic !== "all" && licClass(m) !== state.lic) return false;
+  if (state.conf === "yes" && (!m.rel_ok || !m.lic_verified)) return false;
+  if (state.fit === "gpu" && !(e.status === "gpu" || e.status === "tight")) return false;
+  if (state.fit === "run" && e.status === "no") return false;
+  return true;
+}
+
+function renderRows(evals){
+  const body = document.getElementById("body");
+  body.textContent = "";
+  evals.forEach(e => {
+    const m = e.m;
+    const nameCell = el("td", {class:"name"}, [el("div", {class:"n", text:m.name}), el("div", {class:"f", text:m.family + (m.arch === "moe" ? " · MoE" : "") + (m.quant ? " · " + m.quant : "")})]);
+    if (m.notes) nameCell.appendChild(el("div", {class:"small", text:m.notes}));
+    const useCell = el("td", null, m.uses.map(u => el("span", {class:"use", text:USES[u] || u})));
+    const lic = el("td", {text: (m.license || "Not stated") + (m.license && !m.lic_verified ? " ?" : "")});
+    const fit = el("td", null, [el("span", {class:"badge b-" + e.status, text:FIT_LABEL[e.status]})]);
+    let tagCell;
+    if (m.tag) tagCell = el("td", null, [el("code", {text:m.tag})]);
+    else tagCell = el("td", {class:"small", text:m.runtime_note || "—"});
+    const tr = el("tr", null, [
+      nameCell, useCell,
+      el("td", {text:m.maker || "Not stated"}),
+      el("td", {text:fmtRel(m)}),
+      el("td", {text:fmtParams(m)}),
+      el("td", {text: e.need.toFixed(1)}),
+      el("td", {text:fmtCtx(m.ctx_k)}),
+      lic, fit,
+      el("td", {text:fmtTps(e)}),
+      tagCell
+    ]);
+    body.appendChild(tr);
+  });
+  document.getElementById("empty").hidden = evals.length > 0;
+}
+
+/* ---------- task-first recommendations ---------- */
+const FIT_PLAIN = {gpu:"Runs entirely on your GPU", tight:"Just fits on your GPU", hybrid:"Spills into system RAM (slower but workable)", cpu:"Runs on the CPU (no usable GPU), so expect it to be slow", no:"Too large for this machine"};
+
+function speedWord(t){
+  if (t == null) return "";
+  if (t >= 30) return "fast";
+  if (t >= 15) return "comfortable";
+  if (t >= 8) return "usable";
+  return "slow";
+}
+
+function recommend(mc, task){
+  const rows = (mc.phone && task.phone_ranked ? task.phone_ranked : task.ranked)
+    .map((r, i) => ({r, m:modelById[r.id], i}))
+    .filter(x => x.m && (x.m.tag || mc.phone))
+    .map(x => Object.assign(x, {e:evaluate(mc, x.m)}));
+  const comfy = x => x.e.status !== "no" && x.e.tps != null && x.e.tps >= task.min_tps;
+  const slowOk = x => x.e.status !== "no" && x.e.tps != null && x.e.tps >= SLOW_TPS && x.e.tps < task.min_tps;
+  let primary = rows.find(comfy) || null;
+  let slowPrimary = false;
+  if (!primary){ primary = rows.find(slowOk) || null; slowPrimary = !!primary; }
+  if (!primary){
+    // Nothing reaches even the slow floor: offer the fastest model that runs at all.
+    const run = rows.filter(x => x.e.status !== "no" && x.e.tps != null);
+    primary = run.sort((a, b) => b.e.tps - a.e.tps)[0] || null;
+    slowPrimary = !!primary;
+  }
+  const pi = primary ? rows.indexOf(primary) : rows.length;
+  const upgrade = primary && !slowPrimary ? (rows.slice(0, pi).find(slowOk) || null) : null;
+  const faster = primary ? (rows.slice(pi + 1).find(x => x.e.status !== "no" && x.e.tps != null && x.e.tps >= Math.max(SLOW_TPS, primary.e.tps * 1.5)) || null) : null;
+  const tooBig = rows.slice(0, pi).filter(x => x.e.status === "no").slice(0, 2);
+  return {rows, primary, slowPrimary, upgrade, faster, tooBig};
+}
+
+function pickCompanion(mc, comp){
+  const gpuAvail = mc.unified_memory ? mc.ram_gb * 0.7 : Math.max(0, (mc.vram_gb || 0) - GPU_RESERVE);
+  const limit = Math.max(2, gpuAvail * 0.4);
+  const rows = comp.ranked
+    .map(r => ({r, m:modelById[r.id]}))
+    .filter(x => x.m && x.m.tag)
+    .map(x => Object.assign(x, {e:evaluate(mc, x.m)}));
+  return rows.find(x => x.e.need <= limit) || rows.find(x => x.e.status !== "no") || null;
+}
+
+function copyText(text, btn){
+  const label = btn.textContent;
+  const done = () => { btn.textContent = "Copied"; setTimeout(() => { btn.textContent = label; }, 1500); };
+  const fallback = () => {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+      done();
+    } catch (e) { btn.textContent = "Select and copy"; }
+  };
+  try {
+    if (navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(text).then(done, fallback); return; }
+  } catch (e) { /* fall through */ }
+  fallback();
+}
+
+function cmdRow(cmd){
+  const btn = el("button", {type:"button", class:"btn", text:"Copy"});
+  btn.addEventListener("click", () => copyText(cmd, btn));
+  return el("div", {class:"cmdrow"}, [el("pre", {class:"cmd", text:cmd}), btn]);
+}
+
+const fill = (s, tag, ctag, vars) => {
+  vars = vars || {};
+  return s.replace(/\{tag\}/g, tag).replace(/\{companion_tag\}/g, ctag || "")
+    .replace(/\{ctx\}/g, vars.ctx || "").replace(/\{roles\}/g, vars.roles || "- chat\n      - edit\n      - apply");
+};
+
+function altCard(kicker, x, line){
+  const card = el("div", {class:"alt"}, [
+    el("div", {class:"kicker", text:kicker}),
+    el("div", {class:"nm", text:x.m.name}),
+    el("p", {class:"small", text:line}),
+    el("p", {class:"small", text:FIT_PLAIN[x.e.status] + " · needs about " + x.e.need.toFixed(1) + " GB · est. " + fmtTps(x.e) + " tok/s"})
+  ]);
+  if (!machine().phone) card.appendChild(cmdRow("ollama run " + x.m.tag));
+  return card;
+}
+
+const gb = v => (v >= 10 ? Math.round(v) : +v.toFixed(1)) + " GB";
+const wps = t => Math.max(1, Math.round(t * 0.75));
+function speedPlain(t){
+  if (t == null) return "";
+  const w = t * 0.75;
+  if (w >= 15) return "much faster than you can read";
+  if (w >= 6) return "faster than you can read";
+  if (w >= 3) return "about reading speed";
+  if (w >= 1.5) return "slower than reading speed, like watching someone type";
+  return "painfully slow";
+}
+function fitPlain(mc, status){
+  if (status === "no") return "does not fit in this computer's memory";
+  if (mc.unified_memory) return "fits in this computer's memory";
+  if (mc.phone && status !== "no") return "runs on the phone's processor";
+  switch (status){
+    case "gpu": return "fits entirely in your graphics card";
+    case "tight": return "just fits in your graphics card";
+    case "hybrid": return "uses your graphics card plus regular memory";
+    case "cpu": return "runs on the processor, since this computer has no graphics card it can use";
+  }
+  return "";
+}
+
+function renderCompare(task){
+  const host = document.getElementById("compare");
+  host.textContent = "";
+  const c = (TASKS.comparisons || []).find(x => x.cols.some(col => col.id === task.id));
+  if (!c) return;
+  const det = el("details", {class:"cmp", open:""}, [el("summary", {text:c.title})]);
+  const head = el("tr", null, [el("th", {text:""})]);
+  c.cols.forEach(col => head.appendChild(el("th", {scope:"col", class: col.id === task.id ? "cur" : "", text:col.name + (col.id === task.id ? " (selected)" : "")})));
+  const tbody = el("tbody");
+  c.rows.forEach(r => {
+    const vals = r.vals || [r.a, r.b];
+    const tr = el("tr", null, [el("th", {scope:"row", class:"rowh", text:r.label})]);
+    c.cols.forEach((col, i) => tr.appendChild(el("td", {class: col.id === task.id ? "cur" : "", text:vals[i]})));
+    tbody.appendChild(tr);
+  });
+  det.appendChild(el("div", {class:"cmpwrap"}, [el("table", {class:"compare"}, [el("thead", null, [head]), tbody])]));
+  const wrap = el("div", {class:"chips", style:"margin-top:10px"});
+  c.cols.filter(col => col.id !== task.id).forEach(other => {
+    const btn = el("button", {type:"button", class:"btn", "data-switch":other.id, text:"Switch to: " + other.name});
+    btn.addEventListener("click", () => {
+      const chip = document.querySelector('#tasks [data-task="' + other.id + '"]');
+      if (chip) chip.click();
+    });
+    wrap.appendChild(btn);
+  });
+  det.appendChild(wrap);
+  if (c.note) det.appendChild(el("p", {class:"cmpnote", text:c.note}));
+  host.appendChild(det);
+}
+
+function renderTask(mc){
+  const task = TASKS.tasks.find(t => t.id === state.task);
+  document.getElementById("blurb").textContent = task.blurb;
+  document.getElementById("example").textContent = task.example || "";
+  renderCompare(task);
+  const box = document.getElementById("result");
+  box.textContent = "";
+  if (mc.no_ollama){
+    box.appendChild(el("div", {class:"note", text:mc.no_ollama_note || "This machine cannot run Ollama, so the how-to steps here would not work."}));
+    return;
+  }
+  const rec = recommend(mc, task);
+  if (!rec.primary){
+    box.appendChild(el("div", {class:"note", text:"None of the models I have data for runs well enough for this task on " + mc.name + "."}));
+    return;
+  }
+  const p = rec.primary, m = p.m;
+  const comp = task.companion ? pickCompanion(mc, task.companion) : null;
+  const ctag = comp ? comp.m.tag : "";
+
+  const card = el("div", {class:"rec"});
+
+  /* 1. Plain verdict: use this / not that, and why */
+  const useText = (task.plain_rule ? task.plain_rule + " " : "") + m.name + " " + fitPlain(mc, p.e.status) + "." +
+    (p.e.tps != null ? " It writes about " + wps(p.e.tps) + " words per second (" + speedPlain(p.e.tps) + ")." : "");
+  const verdict = el("div", {class:"verdict"});
+  verdict.appendChild(el("div", {class:"vcol use"}, [
+    el("div", {class:"kicker", text:"Use this on " + mc.name}),
+    el("h3", {text:m.name}),
+    el("p", {text:useText})
+  ]));
+  const nt = rec.tooBig[0] || rec.upgrade;
+  if (nt){
+    const reason = nt.e.status === "no"
+      ? nt.m.name + " is rated higher for this, but it needs about " + gb(nt.e.need) + " of memory and this computer can offer about " + gb(nt.e.cap) + ", so it will not run."
+      : nt.m.name + " is rated higher for this, but on this computer it would only manage about " + wps(nt.e.tps) + " words per second, which is too slow to be pleasant.";
+    verdict.appendChild(el("div", {class:"vcol not"}, [
+      el("div", {class:"kicker", text:"Not this"}),
+      el("h3", {text:nt.m.name}),
+      el("p", {text:reason})
+    ]));
+  }
+  card.appendChild(verdict);
+  if (rec.slowPrimary){
+    card.appendChild(el("div", {class:"note", text:"Heads up: this is the best option that runs at all on this computer, but it is slow (about " + wps(p.e.tps) + " words per second). A smaller model or a more powerful computer will feel much better."}));
+  }
+  if (comp){
+    card.appendChild(el("p", null, [el("b", {text:"You also need a small helper model that finds the right parts of your documents: "}), document.createTextNode(comp.m.name + ".")]));
+  }
+
+  /* 2. How to start */
+  if (!mc.phone) card.appendChild(el("h4", {class:"howto", text:"How to start"}));
+  const ol = el("ol", {class:"steps"});
+  (mc.phone ? [] : TASKS.common_steps.concat(task.steps || [])).forEach(s0 => {
+    const s = Object.assign({}, s0, (s0.by_os && s0.by_os[state.os]) || {});
+    if (!ctag && /\{companion_tag\}/.test((s.body || "") + (s.cmd || ""))) return;
+    const noGpu = !mc.unified_memory && !mc.vram_gb;
+    const title = noGpu && s.cpu_title ? s.cpu_title : s.title;
+    const body = noGpu && s.cpu_body ? s.cpu_body : s.body;
+    const li = el("li", null, [el("strong", {text:title}), el("div", {text:fill(body, m.tag, ctag)})]);
+    if (s.cmd) li.appendChild(cmdRow(fill(s.cmd, m.tag, ctag)));
+    ol.appendChild(li);
+  });
+  if (!mc.phone) card.appendChild(ol);
+
+  /* Connect a tool */
+  if (mc.phone) renderPhone(card, task, m, p.e, mc);
+  else if (task.clients && task.clients.length) renderClients(card, task, m, p.e, mc);
+
+  /* About the model */
+  const about = el("div", {class:"about"}, [el("h3", {text:"About " + m.name})]);
+  const dl = el("dl");
+  [["Made by", m.maker || "Not stated"],
+   ["Released", fmtRel(m)],
+   ["License", (m.license || "Not stated") + (m.license && !m.lic_verified ? " ?" : "")],
+   ["Size", fmtParams(m) + (m.arch === "moe" ? " (mixture of experts)" : "") + " · " + fmtCtx(m.ctx_k) + " context"]
+  ].forEach(r => { dl.appendChild(el("dt", {text:r[0]})); dl.appendChild(el("dd", {text:r[1]})); });
+  about.appendChild(dl);
+  if (m.notes) about.appendChild(el("p", {class:"small", text:m.notes}));
+  if (m.rel_note) about.appendChild(el("p", {class:"small", text:m.rel_note}));
+  const checks = (m.src || []).map(k => DATA.sources[k] && DATA.sources[k].checked).filter(Boolean).sort();
+  if (checks.length) about.appendChild(el("p", {class:"small", text:"Sources for this model last read: " + checks[checks.length - 1] + "."}));
+  if (!m.rel_ok || !m.lic_verified) about.appendChild(el("p", {class:"small", text:"A ? means that detail comes from general knowledge, not a source checked for this page."}));
+  if (m.page){
+    if (safeUrl(m.page)){
+      const a = el("a", {href:m.page, target:"_blank", rel:"noopener noreferrer", text:/huggingface\.co/.test(m.page) ? "Model page on Hugging Face" : /openrouter\.ai/.test(m.page) ? "Model page (OpenRouter)" : "Model page on Ollama"});
+      about.appendChild(el("p", {class:"small"}, [a]));
+    }
+  }
+  card.appendChild(about);
+
+  /* 3. Detail, collapsed */
+  const more = el("details", {class:"more"}, [el("summary", {text:"More detail: numbers, other options, tips"})]);
+  more.appendChild(el("div", {class:"meta"}, [
+    el("span", {class:"badge b-" + p.e.status, text:FIT_LABEL[p.e.status]}),
+    el("span", {class:"small", text:FIT_PLAIN[p.e.status] + " · needs about " + p.e.need.toFixed(1) + " GB · est. " + fmtTps(p.e) + " tok/s (" + speedWord(p.e.tps) + ")"})
+  ]));
+  more.appendChild(el("p", {text:p.r.why || m.notes || ""}));
+  if (p.r.tip) more.appendChild(el("p", {class:"small", text:p.r.tip}));
+  if (comp) more.appendChild(el("p", {class:"small", text:task.companion.label + ": " + comp.m.name + " (" + comp.m.tag + "). " + (comp.r.why || "")}));
+  const alts = el("div", {class:"alts"});
+  if (rec.upgrade) alts.appendChild(altCard("Higher quality, slower", rec.upgrade, (rec.upgrade.r.why || "") + " Ranked better than the pick above, but too slow to be comfortable here."));
+  if (rec.faster) alts.appendChild(altCard("Faster option", rec.faster, (rec.faster.r.why || "") + " Ranked lower, but much quicker on this machine."));
+  if (alts.children.length) more.appendChild(alts);
+  if (rec.tooBig.length){
+    more.appendChild(el("p", {class:"toobig", text:"Better models that need more memory than this machine has: " + rec.tooBig.map(x => x.m.name + " needs about " + x.e.need.toFixed(0) + " GB and this machine can use about " + x.e.cap.toFixed(0) + " GB (short by about " + Math.max(1, Math.ceil(x.e.need - x.e.cap)) + " GB: more RAM or a bigger graphics card would unlock it)").join("; ") + "."}));
+  }
+  if (task.tips && task.tips.length){
+    more.appendChild(el("ul", {class:"tips"}, task.tips.map(t => el("li", {text:t}))));
+  }
+  if (task.sources && task.sources.length){
+    const ev = el("p", {class:"small"}, [document.createTextNode("Evidence for this task (checked " + (task.sources_checked || "?") + "): ")]);
+    task.sources.forEach((x, i) => {
+      if (i) ev.appendChild(document.createTextNode("; "));
+      if (safeUrl(x.url)) ev.appendChild(el("a", {href:x.url, target:"_blank", rel:"noopener noreferrer", text:x.title}));
+      else ev.appendChild(document.createTextNode(x.title));
+    });
+    more.appendChild(ev);
+  }
+  card.appendChild(more);
+  box.appendChild(card);
+}
+
+function renderStack(box, o){
+  const {task, m, e, mc, c, ctx} = o;
+  const lm = c.engine === "lm-studio";
+  const remote = !!state.stackRemote;
+  const addr = remote ? c.address.replace(/localhost|127\.0\.0\.1/, "MODEL-COMPUTER-ADDRESS").replace(/ \(.*\)$/, "") : c.address;
+  const wrap = el("div", {class:"stack"}, [el("h4", {class:"howto", text:"Your stack: how the pieces connect"})]);
+  const tog = el("label", {class:"small"}, [el("input", {type:"checkbox", id:"stack-remote"}), document.createTextNode(" The tool runs on a different computer than the model")]);
+  tog.firstChild.checked = remote;
+  tog.firstChild.addEventListener("change", ev => { state.stackRemote = ev.target.checked; render(); });
+  wrap.appendChild(tog);
+  const layer = (name, title, detail) => el("div", {class:"layer"}, [el("div", {class:"lname", text:name}), el("div", null, [el("strong", {text:title}), el("div", {class:"small", text:detail})])]);
+  const arrow = (text) => el("div", {class:"arrow", "aria-hidden":"true"}, [el("span", {text:"\u2193 " + text})]);
+  const grp = (title, kids) => el("div", {class:"grp"}, [el("div", {class:"gname", text:title})].concat(kids));
+  const toolG = [
+    layer("You", task.label, "What you are trying to do."),
+    layer("Tool", c.name, c.kind + ".")
+  ];
+  const engineName = lm ? "LM Studio (replaces Ollama)" : "Ollama";
+  const memWhere = FIT_PLAIN[e.status] + " · needs about " + e.need.toFixed(1) + " GB · est. " + fmtTps(e) + " tok/s";
+  const ctxLine = "Context length " + ctx + " tokens";
+  const ctxHow = lm ? "Set when loading the model: lms load <model_key> --context-length " + ctx + ". " : "Ollama's default is only 2048 to 4096, so set it as in the steps above. ";
+  const engG = [
+    layer("Engine", engineName, (lm ? "Runs the model and serves it at port 1234" : "Runs the model in the background and serves it at port 11434") + (remote ? " on this computer." : ".")),
+    layer("Settings", ctxLine, ctxHow + (Number(ctx) > 8192 ? "The memory figure on the Model line is for a short context: " + ctx + " tokens needs noticeably more, so check ollama ps." : "More context uses more memory.")),
+    layer("Model", m.name + (lm ? " (search for it by name in LM Studio)" : " (" + m.tag + ")"), memWhere + "."),
+    layer("Hardware", mc.name, [mc.cpu, mc.ram_gb + " GB RAM"].concat(mc.gpu ? [mc.gpu + (mc.vram_gb ? " (" + mc.vram_gb + " GB)" : "")] : []).concat(mc.unified_memory ? ["unified memory"] : []).join(" · "))
+  ];
+  if (remote){
+    wrap.appendChild(grp("Computer A: where you work", toolG));
+    wrap.appendChild(arrow("over your network to " + addr));
+    wrap.appendChild(grp("Computer B: where the model runs", engG));
+    wrap.appendChild(el("p", {class:"small", text: (lm ? "In LM Studio, serve on the network from the Developer tab. " : "On the model computer, set the OLLAMA_HOST user environment variable to 0.0.0.0:11434 and restart Ollama. ") + "Replace MODEL-COMPUTER-ADDRESS with that computer's address (for example 192.168.1.50). Only do this on a network you trust, and make sure the model computer's firewall allows the port."}));
+  } else {
+    wrap.appendChild(grp("This computer (" + mc.name + ")", toolG.concat([arrow("asks " + addr)], engG)));
+  }
+  wrap.appendChild(el("p", {class:"small", text:"Everything above except the tool can stay the same when you try another tool: pick a different one above and only the Tool box and address change."}));
+  box.appendChild(wrap);
+}
+
+const OS_NAME = {windows:"Windows", mac:"macOS", linux:"Linux"};
+function renderOs(box, o){
+  const {task, mc, c} = o;
+  if (!OSDATA || mc.no_ollama || mc.phone) return;
+  const F = OSDATA.facts, cur = mc.os_family || "windows";
+  const gpuName = (mc.gpu || "").toLowerCase();
+  const nvidia = /nvidia|geforce|rtx|gtx/.test(gpuName), amd = /radeon|amd|\brx\b/.test(gpuName) && !/ryzen ai/.test(gpuName);
+  const hasGpu = !mc.unified_memory && (mc.vram_gb || 0) > 0;
+  const always = !!state.osServer;
+  const why = [], facts = [];
+  let verdict, lead;
+  // what a lighter OS would change, using the page's own fit model
+  let alt = null;
+  if (!mc.unified_memory && cur === "windows" && (mc.os_reserve_gb == null || mc.os_reserve_gb > OSDATA.linux_reserve_gb)){
+    const mc2 = Object.assign({}, mc, {os_reserve_gb: OSDATA.linux_reserve_gb, os_family:"linux"});
+    const now = recommend(mc, task), then = recommend(mc2, task);
+    if (now.primary && then.primary) alt = {now: now.primary, then: then.primary, freed: (mc.os_reserve_gb != null ? mc.os_reserve_gb : OS_RESERVE) - OSDATA.linux_reserve_gb};
+  }
+  if (mc.unified_memory){
+    verdict = "Stay on macOS";
+    lead = "This is an Apple silicon Mac: Ollama uses its graphics and its unified memory, so macOS is the right place to run models.";
+    facts.push(F.apple);
+  } else if (cur === "linux"){
+    verdict = "Stay on Linux";
+    lead = "Linux has the lowest overhead of the three, so this machine is already set up the best way.";
+    if (nvidia) { why.push("If a graphics card is not used, check that the NVIDIA driver is installed (Ollama needs driver 550 or newer)."); facts.push(F.nvidia); }
+    if (amd) facts.push(F.amd);
+  } else {
+    // Windows
+    const smallCard = hasGpu && mc.vram_gb <= 8;
+    const reasons = [], minor = [];
+    if (alt && alt.then.m.id !== alt.now.m.id) reasons.push("On Linux this machine could run " + alt.then.m.name + " for this task instead of " + alt.now.m.name + ", because Linux leaves about " + alt.freed + " GB more memory for the model (the page assumes Windows keeps " + (mc.os_reserve_gb != null ? mc.os_reserve_gb : OS_RESERVE) + " GB and a light Linux install " + OSDATA.linux_reserve_gb + " GB).");
+    if (smallCard) minor.push("The graphics card has only " + mc.vram_gb + " GB, so the few hundred MB Windows' desktop is reported to use is a noticeable share of it (roughly 3 to 8 percent).");
+    if (always) reasons.push("You said this machine will run all the time for other computers. Two reasons Linux fits that: (1) Windows restarts itself for updates and Ollama only starts once someone signs in, so the service can go down until then; (2) Windows idles at about 3.5 to 4 GB of RAM versus under 0.5 GB for headless Linux, which leaves more for the model (reported, one review). Power use is not a reason: there is no reliable evidence either way. On Windows you can reduce the restart problem with active hours and automatic sign-in.");
+    if (amd && hasGpu) reasons.push("It looks like an AMD card: Ollama's AMD support is broader on Linux than on Windows.");
+    if (reasons.length){
+      verdict = "Linux is worth trying on this machine";
+      lead = "Staying on Windows works, but there are reasons to consider Linux (dual boot, or a spare drive so you can go back):";
+      reasons.concat(minor).forEach(r => why.push(r));
+    } else if (minor.length){
+      verdict = "Stay on Windows";
+      lead = "Windows works fine with Ollama and the tools on this page. Linux could help a little, but the evidence is thin and switching has a cost, so only try it if you enjoy tinkering:";
+      minor.forEach(r => why.push(r));
+    } else {
+      verdict = "Stay on Windows";
+      lead = "Nothing here makes switching worth the effort. Windows works fine with Ollama and the tools on this page" + (hasGpu ? " (the card has " + mc.vram_gb + " GB, so the desktop's share of it is small)." : ".");
+    }
+    why.push("Speed: Linux is reported to be modestly faster (5 to 25 percent, not measured on your machine). See the evidence below.");
+    facts.push(F.speed, F.wsl);
+    if (hasGpu) facts.push(F.vram);
+    if (!hasGpu) facts.push(F.ram);
+    if (nvidia) facts.push(F.nvidia);
+    if (amd) facts.push(F.amd);
+    if (always) facts.push(F.server, F.server_win, F.power, F.server_net);
+    const tn = OSDATA.tools[c.id];
+    if (tn) why.push("About " + c.name + ": " + tn);
+  }
+  const wrap = el("div", {class:"osadv"}, [el("h4", {class:"howto", text:"Which operating system?"})]);
+  const tog = el("label", {class:"small"}, [el("input", {type:"checkbox", id:"os-server"}), document.createTextNode(" This computer will run all the time to serve other computers")]);
+  tog.firstChild.checked = always;
+  tog.firstChild.addEventListener("change", ev => { state.osServer = ev.target.checked; render(); });
+  if (cur === "windows" && !mc.unified_memory) wrap.appendChild(tog);
+  wrap.appendChild(el("p", null, [el("strong", {text:verdict + ". "}), document.createTextNode(lead)]));
+  if (why.length) wrap.appendChild(el("ul", {class:"tips"}, why.map(t => el("li", {text:t}))));
+  if (alt && alt.then.m.id === alt.now.m.id) wrap.appendChild(el("p", {class:"small", text:"Checked with the page's fit model: a lighter OS would free about " + alt.freed + " GB, but the recommended model for this task would not change."}));
+  const ev = el("details", {class:"evid"}, [el("summary", {text:"The evidence (reports, not measurements on your machine)"})]);
+  const seen = new Set(); const used = [];
+  facts.forEach(f => { if (!seen.has(f.text)){ seen.add(f.text); ev.appendChild(el("p", {class:"small", text:f.text})); f.src.forEach(k => { if (used.indexOf(k) < 0) used.push(k); }); } });
+  const sp = el("p", {class:"small"}, [document.createTextNode("Sources: ")]);
+  used.forEach((k, i) => { const s = OSDATA.sources[k]; if (i) sp.appendChild(document.createTextNode(" · ")); sp.appendChild(safeUrl(s.url) ? el("a", {href:s.url, target:"_blank", rel:"noopener noreferrer", text:s.title}) : document.createTextNode(s.title)); });
+  ev.appendChild(sp);
+  ev.appendChild(el("p", {class:"small", text:"Checked " + OSDATA.checked + ". To find out for yourself, time the same model on each OS with ollama run <tag> --verbose (see calibration.md)."}));
+  if (facts.length) wrap.appendChild(ev);
+  box.appendChild(wrap);
+}
+
+function renderTutorial(box, c){
+  const t = TUTORIALS && TUTORIALS.tutorials && TUTORIALS.tutorials[c.id];
+  if (!t) return;
+  const det = el("details", {class:"tut"}, [el("summary", {text:"Tutorial: " + t.title})]);
+  det.appendChild(el("p", {text:t.intro}));
+  if (t.first_task) det.appendChild(el("p", null, [el("strong", {text:"Try this first: "}), document.createTextNode(t.first_task)]));
+  if (t.prompts && t.prompts.length){
+    det.appendChild(el("h5", {text:"Example prompts (written for this page: adjust them to your project)"}));
+    t.prompts.forEach(p => det.appendChild(cmdRow(p)));
+  }
+  det.appendChild(el("h5", {text:"Walkthrough"}));
+  const ol = el("ol", {class:"steps"});
+  t.walkthrough.forEach(s => {
+    const li = el("li", null, [el("strong", {text:s.title}), el("div", {text:s.body})]);
+    if (s.cmd) li.appendChild(cmdRow(s.cmd));
+    const img = s.shot && SCREENS && typeof SCREENS[s.shot] === "string" && /^data:image\/(png|jpeg|webp);base64,/.test(SCREENS[s.shot]) ? SCREENS[s.shot] : null;
+    if (img){
+      const fig = el("figure", {class:"shot"}, [el("img", {src:img, alt:s.shot_caption || (c.name + ": " + s.title), loading:"lazy"})]);
+      if (s.shot_caption) fig.appendChild(el("figcaption", {text:s.shot_caption}));
+      li.appendChild(fig);
+    }
+    ol.appendChild(li);
+  });
+  det.appendChild(ol);
+  if (t.commands && t.commands.length){
+    det.appendChild(el("h5", {text:"Keys and commands worth knowing"}));
+    const tb = el("tbody");
+    t.commands.forEach(r => tb.appendChild(el("tr", null, [el("th", {scope:"row", class:"rowh"}, [el("code", {text:r.cmd})]), el("td", {text:r.what})])));
+    det.appendChild(el("div", {class:"cmpwrap"}, [el("table", {class:"compare"}, [tb])]));
+  }
+  if (t.careful && t.careful.length){
+    det.appendChild(el("h5", {text:"Watch out for"}));
+    det.appendChild(el("ul", {class:"tips"}, t.careful.map(x => el("li", {text:x}))));
+  }
+  const src = el("p", {class:"small"}, [document.createTextNode("From: ")]);
+  t.sources.forEach((x, i) => {
+    if (i) src.appendChild(document.createTextNode(" · "));
+    if (safeUrl(x.url)) src.appendChild(el("a", {href:x.url, target:"_blank", rel:"noopener noreferrer", text:x.title}));
+    else src.appendChild(document.createTextNode(x.title));
+  });
+  src.appendChild(document.createTextNode(" (checked " + t.checked + ")."));
+  det.appendChild(src);
+  if (!t.walkthrough.some(s => s.shot && SCREENS && SCREENS[s.shot])) det.appendChild(el("p", {class:"small", text:"No screenshots yet: this page does not draw pretend screens. Real ones can be added (see screens/README.md)."}));
+  box.appendChild(det);
+}
+
+function renderPhone(card, task, m, e, mc){
+  const list = (task.phone_clients || []).map(id => CLIENTS.clients.find(c => c.id === id)).filter(Boolean);
+  const box = el("div", {class:"clients"}, [el("h4", {class:"howto", text:"How to run it on this phone"})]);
+  if (!list.length){
+    box.appendChild(el("p", {text:"This list has no phone app for \"" + task.label + "\" yet. The tools for this task run on a computer, so use another machine for it, or point a computer's tool at a model running elsewhere."}));
+    card.appendChild(box);
+    return;
+  }
+  const c = list[0];
+  box.appendChild(el("p", null, [el("strong", {text:c.name}), document.createTextNode(" · " + c.kind + ". " + c.blurb)]));
+  box.appendChild(el("p", {class:"small", text:"The speed shown is an estimate from memory speed and phones are often slower than that, especially when warm. Treat it as an upper bound until you run the app's Benchmark."}));
+  box.appendChild(el("p", {class:"small", text:"This phone does not use Ollama. The app runs the model itself, so there is no command to type."}));
+  const ol = el("ol", {class:"steps"});
+  c.steps.forEach(s => ol.appendChild(el("li", null, [el("strong", {text:s.title}), el("div", {text:s.body.replace(/\{name\}/g, m.name)})])));
+  box.appendChild(ol);
+  if (c.builtin && c.builtin.length){
+    const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const inList = c.builtin.some(b => norm(b.name) === norm(m.name));
+    box.appendChild(el("p", {class:"note", text: inList ? m.name + " is in the app's built-in list: just tap Download." : m.name + " is NOT in the app's built-in list, so it has to be added from Hugging Face with the + button."}));
+    const det = el("details", {class:"evid"}, [el("summary", {text:"Models already in the app's list (no searching needed)"})]);
+    det.appendChild(el("ul", {class:"tips"}, c.builtin.map(b => el("li", {text:b.name + " \u00b7 " + b.gb + " GB" + (b.vision ? " \u00b7 can read images" : "")}))));
+    det.appendChild(el("p", {class:"small", text:(c.builtin_src || "") + " Seen " + c.builtin_checked + ". Our ranking has not been checked against these models, so treat the built-in ones as easy starting points, not as the best picks."}));
+    box.appendChild(det);
+  }
+  const layer = (name, title, detail) => el("div", {class:"layer"}, [el("div", {class:"lname", text:name}), el("div", null, [el("strong", {text:title}), el("div", {class:"small", text:detail})])]);
+  const arrow = (text) => el("div", {class:"arrow", "aria-hidden":"true"}, [el("span", {text:"↓ " + text})]);
+  const wrap = el("div", {class:"stack"}, [el("h4", {class:"howto", text:"Your stack: all on the phone"})]);
+  wrap.appendChild(el("div", {class:"grp"}, [el("div", {class:"gname", text:"This phone (" + mc.name + ")"}),
+    layer("You", task.label, "What you are trying to do."),
+    layer("Tool", c.name, "The app you type into. It also runs the model."),
+    arrow("loads"),
+    layer("Model", m.name, FIT_PLAIN[e.status] + " · needs about " + e.need.toFixed(1) + " GB · est. " + fmtTps(e) + " tok/s"),
+    layer("Hardware", mc.name, mc.cpu + " · " + mc.ram_gb + " GB RAM")]));
+  box.appendChild(wrap);
+  box.appendChild(el("p", {class:"small"}, [document.createTextNode("Steps from the app's own README, checked " + c.checked + ": "), safeUrl(c.docs) ? el("a", {href:c.docs, target:"_blank", rel:"noopener noreferrer", text:"PocketPal AI on GitHub"}) : document.createTextNode(c.docs)]));
+  card.appendChild(box);
+}
+
+function renderContext(box, c){
+  const G = CLIENTS.context_general, X = c.context;
+  if (!G && !X) return;
+  const det = el("details", {class:"evid"}, [el("summary", {text:(G && G.title) || "Memory and context files"})]);
+  if (G){
+    det.appendChild(el("p", {text:G.intro}));
+    det.appendChild(el("ul", {class:"tips"}, G.tips.map(t => el("li", {text:t}))));
+  }
+  if (X){
+    det.appendChild(el("h4", {class:"howto", text:"In " + c.name}));
+    det.appendChild(el("ul", {class:"tips"}, X.files.map(f => el("li", null, [el("strong", {text:f.name}), document.createTextNode(" (" + f.where + "): " + f.what)]))));
+    (X.notes || []).forEach(n => det.appendChild(el("p", {class:"small", text:n})));
+    det.appendChild(el("p", {class:"small", text:"Example " + X.example.file + " (change it to fit your project, and keep it short):"}));
+    det.appendChild(cmdRow(X.example.text));
+    const src = el("p", {class:"small"}, [document.createTextNode("Sources (checked " + X.checked + "): ")]);
+    X.sources.forEach((s, i) => {
+      if (i) src.appendChild(document.createTextNode("; "));
+      if (safeUrl(s.url)) src.appendChild(el("a", {href:s.url, target:"_blank", rel:"noopener noreferrer", text:s.title}));
+      else src.appendChild(document.createTextNode(s.title));
+    });
+    det.appendChild(src);
+  } else {
+    det.appendChild(el("p", {class:"small", text:"This page has not looked up where " + c.name + " keeps its memory or rules files yet, so it only has the general tips above. Check its docs."}));
+  }
+  box.appendChild(det);
+}
+
+function renderClients(card, task, m, e, mc){
+  const list = task.clients.map(id => CLIENTS.clients.find(c => c.id === id)).filter(Boolean);
+  if (!list.length) return;
+  let saved = null;
+  try { saved = localStorage.getItem("localai.client." + task.id); } catch (e) { /* storage unavailable */ }
+  if (!state.clientFor) state.clientFor = {};
+  let pick = state.clientFor[task.id] || saved;
+  if (!list.some(c => c.id === pick)) pick = list[0].id;
+  state.clientFor[task.id] = pick;
+  const c = list.find(x => x.id === pick);
+  const vars = Object.assign({ctx: String(c.ctx || task.ctx)}, task.vars || {});
+  const box = el("div", {class:"clients"}, [el("h4", {class:"howto", text:"Connect a tool to use it"})]);
+  box.appendChild(el("p", {class:"small", text:"Ollama runs the model. A tool is what you actually type into. Ollama runs the model and these tools connect to it at the same address, so you can switch freely (LM Studio is the exception: it replaces Ollama). The tool you pick is remembered on this device."}));
+  const chips = el("div", {class:"chips"});
+  list.forEach(cl => {
+    const b = el("button", {type:"button", class:"chip", text:cl.name});
+    b.setAttribute("aria-pressed", String(cl.id === pick));
+    b.addEventListener("click", () => {
+      state.clientFor[task.id] = cl.id;
+      try { localStorage.setItem("localai.client." + task.id, cl.id); } catch (e) { /* ignore */ }
+      render();
+    });
+    chips.appendChild(b);
+  });
+  box.appendChild(chips);
+  box.appendChild(el("p", null, [el("strong", {text:c.name}), document.createTextNode(" · " + c.kind + ". " + c.blurb)]));
+  const ol = el("ol", {class:"steps"});
+  c.steps.forEach(s0 => {
+    const s = Object.assign({}, s0, (s0.by_os && s0.by_os[state.os]) || {});
+    const li = el("li", null, [el("strong", {text:s.title}), el("div", {text:fill(s.body, m.tag, "", vars)})]);
+    if (s.cmd) li.appendChild(cmdRow(fill(s.cmd, m.tag, "", vars)));
+    ol.appendChild(li);
+  });
+  box.appendChild(ol);
+  renderStack(box, {task, m, e, mc, c, ctx: vars.ctx});
+  renderOs(box, {task, m, e, mc, c});
+  renderTutorial(box, c);
+  renderContext(box, c);
+  box.appendChild(el("p", {class:"small"}, [document.createTextNode("Steps from the tool's own docs, checked " + c.checked + ": "), safeUrl(c.docs) ? el("a", {href:c.docs, target:"_blank", rel:"noopener noreferrer", text:c.docs}) : document.createTextNode("(no link)")]));
+  card.appendChild(box);
+}
+
+function renderMachine(mc){
+  const bits = [mc.cpu, mc.ram_gb + " GB RAM"];
+  if (mc.gpu) bits.push(mc.gpu + (mc.vram_gb ? " (" + mc.vram_gb + " GB VRAM)" : ""));
+  if (mc.unified_memory) bits.push("unified memory");
+  document.getElementById("specs").textContent = bits.join(" · ") + (mc.hostname ? " · host " + mc.hostname : "");
+  document.getElementById("mnotes").textContent = mc.notes ? "Note: " + mc.notes : "";
+}
+
+function render(){
+  const mc = machine();
+  renderMachine(mc);
+  const all = DATA.models.map(m => evaluate(mc, m));
+  renderTask(mc);
+  renderHead();
+  const shown = all.filter(matches).sort(compare);
+  renderRows(shown);
+  document.getElementById("count").textContent = "Showing " + shown.length + " of " + all.length + " models for " + mc.name + ".";
+}
+
+function machineFromForm(){
+  const v = id => document.getElementById(id).value.trim();
+  const num = id => v(id) === "" ? null : Number(v(id));
+  const uni = document.getElementById("m-uni").checked;
+  const ram = num("m-ram"), vram = num("m-vram") || 0;
+  let bw = num("m-bw");
+  const mts = num("m-mts"), ch = Number(v("m-ch"));
+  if (bw == null && mts != null) bw = Math.round(mts * 8 * ch / 100) / 10;
+  if (!v("m-name") || !v("m-cpu")) return {error:"Give the machine a name and processor."};
+  if (!(ram > 0)) return {error:"Enter the RAM in GB."};
+  if (!(bw > 0)) return {error:"Enter the RAM speed (MT/s) or the bandwidth in GB/s."};
+  const mc = {id:"custom-" + Date.now().toString(36), name:v("m-name"), cpu:v("m-cpu"), ram_gb:ram, ram_bandwidth_gbps:bw, os_family:v("m-os"), custom:true};
+  if (uni) mc.unified_memory = true;
+  else if (vram > 0){
+    const vbw = num("m-vbw");
+    if (!(vbw > 0)) return {error:"Enter the graphics card bandwidth in GB/s (on the card's spec sheet), or set card memory to 0."};
+    mc.gpu = v("m-gpu") || "Graphics card"; mc.vram_gb = vram; mc.vram_bandwidth_gbps = vbw;
+  } else mc.vram_gb = 0;
+  return {mc};
+}
+function addMachineOption(mc, select){ select.appendChild(el("option", {value:mc.id, text:mc.name + (mc.custom ? " (mine)" : "")})); }
+function initMachineForm(sel, osSel){
+  const status = document.getElementById("m-status");
+  const delBtn = document.getElementById("m-del");
+  const syncDel = () => { delBtn.hidden = !(machine() && machine().custom); };
+  document.getElementById("mform").addEventListener("submit", ev => {
+    ev.preventDefault();
+    const r = machineFromForm();
+    if (r.error){ status.textContent = r.error; return; }
+    MACHINES.push(r.mc);
+    const saved = saveCustomMachines();
+    addMachineOption(r.mc, sel);
+    sel.value = r.mc.id; state.machine = r.mc.id; state.os = r.mc.os_family; osSel.value = r.mc.os_family;
+    status.textContent = "Added " + r.mc.name + ". " + (saved ? "Saved in this browser." : "Could not save in this browser: use Export to keep it.");
+    document.getElementById("mform").reset();
+    syncDel(); render();
+  });
+  delBtn.addEventListener("click", () => {
+    const mc = machine();
+    if (!mc || !mc.custom) return;
+    MACHINES.splice(MACHINES.indexOf(mc), 1);
+    saveCustomMachines();
+    [...sel.options].forEach(o => { if (o.value === mc.id) o.remove(); });
+    state.machine = MACHINES[0].id; sel.value = state.machine; state.os = MACHINES[0].os_family || "windows"; osSel.value = state.os;
+    status.textContent = "Removed " + mc.name + ".";
+    syncDel(); render();
+  });
+  document.getElementById("m-export").addEventListener("click", () => {
+    document.getElementById("m-json").value = JSON.stringify(MACHINES.filter(m => m.custom).map(m => { const c = Object.assign({}, m); delete c.custom; return c; }), null, 2);
+  });
+  document.getElementById("m-import").addEventListener("click", () => {
+    let arr;
+    try { arr = JSON.parse(document.getElementById("m-json").value); } catch (e) { status.textContent = "That is not valid JSON."; return; }
+    if (!Array.isArray(arr)) { status.textContent = "Expected a list of machines."; return; }
+    let n = 0;
+    arr.filter(validMachine).forEach(m => {
+      if (MACHINES.some(x => x.id === m.id)) return;
+      const mc = Object.assign({}, m, {custom:true}); MACHINES.push(mc); addMachineOption(mc, sel); n++;
+    });
+    saveCustomMachines();
+    status.textContent = "Imported " + n + " machine(s)" + (arr.length - n ? "; skipped " + (arr.length - n) + " invalid or duplicate." : ".");
+    render();
+  });
+  sel.addEventListener("change", syncDel);
+  syncDel();
+}
+
+async function loadRemote(){
+  try {
+    if (typeof fetch !== "function") return;
+    const ctl = typeof AbortController === "function" ? new AbortController() : null;
+    const timer = setTimeout(() => ctl && ctl.abort(), 4000);
+    const r = await fetch(REMOTE_URL, {cache:"no-store", signal: ctl ? ctl.signal : undefined});
+    clearTimeout(timer);
+    if (!r.ok) return;
+    const j = await r.json();
+    if (!j || j.schema !== 1 || !j.data || !Array.isArray(j.data.models) || !j.tasks || !Array.isArray(j.tasks.tasks) || !j.clients || !Array.isArray(j.clients.clients)) return;
+    if (!(Date.parse(j.data.updated) > Date.parse(DATA.updated))) return;
+    const ids = new Set(j.data.models.map(m => m.id));
+    const cids = new Set(j.clients.clients.map(c => c.id));
+    if (j.tutorials && !(j.tutorials.tutorials && Object.keys(j.tutorials.tutorials).every(k => cids.has(k)))) return;
+    const ok = j.tasks.tasks.every(t => t.ranked.every(x => ids.has(x.id)) && (t.clients || []).every(c => cids.has(c)));
+    if (!ok) return;
+    DATA.updated = j.data.updated; DATA.about = j.data.about; DATA.sources = j.data.sources; DATA.models = j.data.models;
+    Object.keys(TASKS).forEach(k => delete TASKS[k]); Object.assign(TASKS, j.tasks);
+    Object.keys(CLIENTS).forEach(k => delete CLIENTS[k]); Object.assign(CLIENTS, j.clients);
+    if (j.tutorials){ Object.keys(TUTORIALS).forEach(k => delete TUTORIALS[k]); Object.assign(TUTORIALS, j.tutorials); }
+    Object.keys(modelById).forEach(k => delete modelById[k]); DATA.models.forEach(m => { modelById[m.id] = m; });
+    state.remote = j.version || true;
+  } catch (e) { /* offline or blocked: keep the built-in data */ }
+}
+
+function init(){
+  document.getElementById("sub").textContent = "Free, open-weight models you can run locally. Version " + BUILD.version + " · data last updated " + DATA.updated + (state.remote ? " (newer data loaded from GitHub)" : "") + ".";
+  const ageDays = Math.floor((Date.now() - Date.parse(DATA.updated)) / 86400000);
+  const stale = document.getElementById("stale");
+  if (ageDays > 30){
+    stale.textContent = "This data is " + ageDays + " days old. New models are released all the time, so newer and better ones probably exist. Check the model pages before you download.";
+    stale.hidden = false;
+  }
+  const sel = document.getElementById("machine");
+  MACHINES.forEach(mc => addMachineOption(mc, sel));
+  const osSel = document.getElementById("os");
+  osSel.value = state.os;
+  sel.addEventListener("change", () => {
+    state.machine = sel.value;
+    state.os = machine().os_family || "windows";
+    osSel.value = state.os;
+    render();
+  });
+  osSel.addEventListener("change", () => { state.os = osSel.value; render(); });
+  initMachineForm(sel, osSel);
+
+  const taskBox = document.getElementById("tasks");
+  TASKS.tasks.forEach(t => {
+    const b = el("button", {type:"button", class:"chip", "aria-pressed": t.id === state.task ? "true" : "false", "data-task":t.id, text:t.label});
+    b.addEventListener("click", () => {
+      state.task = t.id;
+      taskBox.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c === b ? "true" : "false"));
+      render();
+    });
+    taskBox.appendChild(b);
+  });
+
+  const chips = document.getElementById("chips");
+  Object.keys(USES).forEach(u => {
+    const b = el("button", {type:"button", class:"chip", "aria-pressed":"false", "data-use":u, text:USES[u]});
+    b.addEventListener("click", () => {
+      if (state.uses.has(u)) state.uses.delete(u); else state.uses.add(u);
+      b.setAttribute("aria-pressed", state.uses.has(u) ? "true" : "false");
+      render();
+    });
+    chips.appendChild(b);
+  });
+
+  document.getElementById("q").addEventListener("input", ev => { state.q = ev.target.value.trim(); render(); });
+  document.getElementById("fit").addEventListener("change", ev => { state.fit = ev.target.value; render(); });
+  document.getElementById("lic").addEventListener("change", ev => { state.lic = ev.target.value; render(); });
+  document.getElementById("conf").addEventListener("change", ev => { state.conf = ev.target.value; render(); });
+  document.getElementById("reset").addEventListener("click", () => {
+    state.q = ""; state.uses.clear(); state.fit = "all"; state.lic = "all"; state.conf = "all"; state.sort = {key:"fit", dir:1};
+    document.getElementById("q").value = ""; document.getElementById("fit").value = "all"; document.getElementById("lic").value = "all"; document.getElementById("conf").value = "all";
+    chips.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", "false"));
+    render();
+  });
+
+  document.getElementById("ver").textContent = BUILD.version + " (built " + BUILD.built + ")";
+  const srcs = document.getElementById("srcs");
+  srcs.appendChild(document.createTextNode("Sources: "));
+  Object.keys(DATA.sources).forEach((k, i) => {
+    if (i) srcs.appendChild(document.createTextNode(" · "));
+    const s = DATA.sources[k];
+    if (safeUrl(s.url)) srcs.appendChild(el("a", {href:s.url, rel:"noopener noreferrer", text:s.title}));
+    else srcs.appendChild(document.createTextNode(s.title));
+    if (s.checked) srcs.appendChild(document.createTextNode(" (checked " + s.checked + ")"));
+  });
+  render();
+}
+if (typeof fetch === "function") loadRemote().then(init, init); else init();
+</script>
+</body>
+</html>

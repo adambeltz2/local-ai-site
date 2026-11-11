@@ -1,0 +1,538 @@
+{
+  "about": "Tools that talk to the model once Ollama is running. They are interchangeable: every one connects to the same local Ollama address. {tag} and {ctx} are filled in from the recommendation. Steps come from each tool's own docs (see 'docs'), checked on the date shown.",
+  "clients": [
+    {
+      "id": "hermes",
+      "name": "Hermes Agent",
+      "kind": "Coding and general agent (terminal) from Nous Research",
+      "blurb": "A terminal agent that can edit files, run commands and browse. It can run on a different machine from the model (for example on a small server with the model served from a stronger computer).",
+      "docs": "https://hermes-agent.nousresearch.com/docs/guides/local-ollama-setup",
+      "checked": "2026-10-30",
+      "ctx": 65536,
+      "steps": [
+        {
+          "title": "Install it",
+          "body": "Windows and Mac also have a desktop installer on the Hermes website. After installing, reload your terminal. This is the command-line install for Linux, Mac and WSL2.",
+          "cmd": "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash",
+          "by_os": {
+            "windows": {
+              "body": "Run this in PowerShell. The Hermes website also has a desktop installer. After installing, reopen your terminal.",
+              "cmd": "iex (irm https://hermes-agent.nousresearch.com/install.ps1)"
+            }
+          }
+        },
+        {
+          "title": "Make a 64K-context copy of the model",
+          "body": "Hermes needs a model with at least 64,000 tokens of context, and Ollama's default is only 2048 to 4096. Hermes' own guide fixes this by making a copy of the model with a bigger context. First create a text file named Modelfile containing these two lines:",
+          "cmd": "FROM {tag}\nPARAMETER num_ctx {ctx}"
+        },
+        {
+          "title": "Build the copy",
+          "body": "Run this in the folder that holds the Modelfile. It creates a model named local-64k. This much context needs a lot of memory: after your first message run ollama ps, and if PROCESSOR shows a CPU/GPU split, the model spilled out of your graphics card and will be slower.",
+          "cmd": "ollama create local-64k -f Modelfile"
+        },
+        {
+          "title": "Point Hermes at Ollama",
+          "body": "Run hermes setup, choose Custom Endpoint, enter the base URL below, leave the API key empty (or type no-key) and set the model to local-64k. Or edit ~/.hermes/config.yaml (the .hermes folder in your home folder) to contain this. The Hermes guide also offers a setup wizard: run hermes setup, choose Custom Endpoint, and enter http://localhost:11434/v1 with no API key.",
+          "cmd": "model:\n  default: \"local-64k\"\n  provider: \"custom\"\n  base_url: \"http://localhost:11434/v1\""
+        },
+        {
+          "title": "If Hermes is on a different machine than Ollama",
+          "body": "Use the model computer's address instead of localhost in base_url (for example http://192.168.1.50:11434/v1), and set the Ollama computer's OLLAMA_HOST user environment variable to 0.0.0.0:11434, then restart Ollama. Hermes' guide does not cover this case; it is the standard Ollama setting. Only do it on a network you trust, and run the ollama create step on the computer that runs Ollama."
+        },
+        {
+          "title": "Start it and be patient",
+          "body": "Hermes' guide warns that the first reply can take minutes while the model reads its instructions, and that a slow computer may need a longer timeout (HERMES_API_TIMEOUT=1800 in ~/.hermes/.env). If a reply shows raw JSON, tool calling is not working: use a model that lists the tools tag on its Ollama page. Run hermes doctor to diagnose setup problems.",
+          "cmd": "hermes"
+        }
+      ],
+      "address": "http://localhost:11434/v1",
+      "engine": "ollama",
+      "context": {
+        "checked": "2026-10-31",
+        "sources": [
+          {
+            "title": "Hermes: Memory",
+            "url": "https://hermes-agent.nousresearch.com/docs/user-guide/features/memory"
+          },
+          {
+            "title": "Hermes: Which file does what",
+            "url": "https://hermes-agent.nousresearch.com/docs/user-guide/which-file-does-what"
+          }
+        ],
+        "files": [
+          {
+            "name": "SOUL.md",
+            "where": "~/.hermes/SOUL.md",
+            "what": "Its personality, tone and style. You write it. Loaded first in every session."
+          },
+          {
+            "name": "USER.md",
+            "where": "~/.hermes/memories/",
+            "what": "Notes about you (role, preferences). The agent writes it with its memory tool; limit 1,375 characters."
+          },
+          {
+            "name": "MEMORY.md",
+            "where": "~/.hermes/memories/",
+            "what": "The agent's own notes (environment facts, conventions, lessons). Limit 2,200 characters, so it holds about 8 to 15 entries."
+          },
+          {
+            "name": "AGENTS.md or .hermes.md",
+            "where": "The project folder",
+            "what": "Project instructions. Only one project file loads: .hermes.md first, then AGENTS.md, CLAUDE.md, .cursorrules."
+          }
+        ],
+        "notes": [
+          "Memory is loaded at the start of a session as a snapshot. What the agent saves mid-session is on disk at once but only appears in the prompt next session.",
+          "Memory does not shrink by itself: when it is full, writes fail until entries are shortened or removed. Consolidate when it is above 80 percent.",
+          "Older conversations are kept in a searchable database, so they do not need to be squeezed into memory."
+        ],
+        "example": {
+          "file": "AGENTS.md (in your project)",
+          "text": "# Project notes\n- Windows machine, PowerShell. Python is started with: py\n- Run the tests with: py -m pytest -q\n- The model runs on another computer; do not try to start Ollama here.\n- Ask before deleting files."
+        }
+      }
+    },
+    {
+      "id": "open-webui",
+      "name": "Open WebUI",
+      "kind": "Chat window in your browser",
+      "blurb": "A ChatGPT-style page that runs on your computer. Good for long chats, pasting text, and uploading documents.",
+      "docs": "https://docs.openwebui.com/getting-started/quick-start/",
+      "checked": "2026-10-24",
+      "steps": [
+        {
+          "title": "Start it",
+          "body": "Needs Docker. Replace your-secret-key with any long random text (on Mac/Linux, openssl rand -hex 32 makes one). Then open http://localhost:3000.",
+          "cmd": "docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -v open-webui:/app/backend/data -e WEBUI_SECRET_KEY=your-secret-key --name open-webui --restart always ghcr.io/open-webui/open-webui:main"
+        },
+        {
+          "title": "No Docker? Use Python instead",
+          "body": "This opens at http://localhost:8080 and finds Ollama on its own.",
+          "cmd": "pip install open-webui\nopen-webui serve"
+        },
+        {
+          "title": "If the model list is empty",
+          "body": "With Docker, Ollama must listen on all addresses, not just this computer. Set a user environment variable OLLAMA_HOST to 0.0.0.0:11434 and restart Ollama. Then check your avatar > Settings > Admin > Connections: Ollama should be listed. Only do this on a network you trust, because it lets other devices on the network reach your models."
+        },
+        {
+          "title": "Pick the model",
+          "body": "Choose {tag} from the model menu at the top of a new chat."
+        }
+      ],
+      "address": "http://localhost:11434 (from Docker: http://host.docker.internal:11434)",
+      "engine": "ollama"
+    },
+    {
+      "id": "continue",
+      "name": "Continue",
+      "kind": "Editor extension (VS Code, JetBrains)",
+      "blurb": "Adds a chat panel and, for the right model, suggestions as you type, inside your editor.",
+      "docs": "https://docs.continue.dev/customize/model-providers/top-level/ollama",
+      "checked": "2026-10-24",
+      "steps": [
+        {
+          "title": "Install it",
+          "body": "Install the Continue extension from your editor's extension store."
+        },
+        {
+          "title": "Add the model",
+          "body": "Open Continue's config.yaml (the gear icon in the Continue panel opens it) and add this under models. Ollama on this computer needs no apiBase line. The roles line says what the model is used for (chat and edits, or as-you-type suggestions).",
+          "cmd": "models:\n  - name: Local {tag}\n    provider: ollama\n    model: {tag}\n    roles:\n      {roles}"
+        },
+        {
+          "title": "Note",
+          "body": "The provider and model lines are from Continue's Ollama page. The roles list is from Continue's config reference, which was not re-read for this page: check it there if your version complains."
+        }
+      ],
+      "address": "http://localhost:11434 (Continue's default for Ollama)",
+      "engine": "ollama",
+      "context": {
+        "checked": "2026-10-31",
+        "sources": [
+          {
+            "title": "Continue: Rules (a mirror of the docs; this page could not confirm it is the official copy)",
+            "url": "https://continuedev.netlify.app/customize/deep-dives/rules"
+          }
+        ],
+        "files": [
+          {
+            "name": ".continue/rules/*.md",
+            "where": "The root of your workspace",
+            "what": "One Markdown file per rule or topic. Optional frontmatter: name, globs, regex, description, alwaysApply."
+          },
+          {
+            "name": "alwaysApply",
+            "where": "In a rule's frontmatter",
+            "what": "true: always included. false: included only when its globs match or the agent decides it fits the description. Unset: included if it has no globs, or if they match."
+          }
+        ],
+        "notes": [
+          "The older .continuerules file is described as deprecated in favor of the folder."
+        ],
+        "example": {
+          "file": ".continue/rules/style.md",
+          "text": "---\nname: Project style\nalwaysApply: true\n---\n- TypeScript strict mode; no any.\n- Use named exports.\n- Tests live next to the file as *.test.ts."
+        }
+      }
+    },
+    {
+      "id": "cline",
+      "name": "Cline",
+      "kind": "Editor agent (VS Code)",
+      "blurb": "An agent inside VS Code that reads your project, edits files and runs commands, asking you first.",
+      "docs": "https://docs.cline.bot/provider-config/ollama",
+      "checked": "2026-10-24",
+      "steps": [
+        {
+          "title": "Install it",
+          "body": "Install the Cline extension in VS Code and make sure Ollama is running."
+        },
+        {
+          "title": "Point it at Ollama",
+          "body": "In Cline's settings choose the provider Ollama, set the base URL to the address below, then pick {tag} from the model list (pull it first if it is missing).",
+          "cmd": "http://localhost:11434"
+        },
+        {
+          "title": "Turn on the compact prompt",
+          "body": "Cline Settings > Features > Use Compact Prompt. Cline's docs recommend this for local models: it makes the instructions Cline sends shorter, so small models cope better."
+        },
+        {
+          "title": "Keep tasks small",
+          "body": "Start a new task when the conversation gets long. Local models slow down and lose track as the context fills."
+        }
+      ],
+      "address": "http://localhost:11434",
+      "engine": "ollama",
+      "context": {
+        "checked": "2026-10-31",
+        "sources": [
+          {
+            "title": "Cline: Memory Bank",
+            "url": "https://docs.cline.bot/customization/memory-bank"
+          }
+        ],
+        "files": [
+          {
+            "name": "Rules file",
+            "where": ".clinerules/ in the project (or Cline's global custom instructions)",
+            "what": "Instructions loaded for the project. The Memory Bank instructions go here."
+          },
+          {
+            "name": "memory-bank/",
+            "where": "A folder in your project",
+            "what": "Plain Markdown files that carry the project between sessions: projectbrief.md, productContext.md, activeContext.md (current focus, updated most), systemPatterns.md, techContext.md, progress.md."
+          }
+        ],
+        "notes": [
+          "To start: copy the Memory Bank instructions from Cline's doc into .clinerules/memory-bank.md, then tell Cline \"initialize memory bank\".",
+          "At a checkpoint say \"update memory bank\", start a new conversation, then say \"follow your custom instructions\" so it re-reads the files.",
+          "The Memory Bank is a lot of reading for a model with a small context window. With a local model, start with just projectbrief.md and activeContext.md (this is this page's advice, not Cline's)."
+        ],
+        "example": {
+          "file": "memory-bank/activeContext.md",
+          "text": "# Active context\n## Current focus\nAdding a CSV export button to the reports page.\n## Recent changes\n- Export function written in src/export.py (untested).\n## Next steps\n1. Write tests for src/export.py.\n2. Wire the button in templates/reports.html."
+        }
+      }
+    },
+    {
+      "id": "opencode",
+      "name": "opencode",
+      "kind": "Coding agent in your terminal",
+      "blurb": "An agent that runs in your terminal inside a project folder. You describe the job; it reads files, edits them and runs commands.",
+      "docs": "https://opencode.ai/docs/providers/",
+      "checked": "2026-10-30",
+      "steps": [
+        {
+          "title": "Install it",
+          "body": "Any one of these works. On Windows the opencode docs recommend WSL (Windows' built-in Linux); native options are npm, Chocolatey and Scoop. Shortcut: Ollama's docs say you can skip the manual config below by running ollama launch opencode (add --config to only write the config). They also say OpenCode needs a context length of 64K or more.",
+          "cmd": "npm install -g opencode-ai",
+          "by_os": {
+            "mac": {
+              "cmd": "curl -fsSL https://opencode.ai/install | bash"
+            },
+            "linux": {
+              "cmd": "curl -fsSL https://opencode.ai/install | bash"
+            }
+          }
+        },
+        {
+          "title": "Tell it about your local model",
+          "body": "Create a file named opencode.json in your project folder with this content. The model name must match the Ollama tag exactly. The context number in 'limit' only helps opencode track usage: the real limit is the one Ollama is set to (next step).",
+          "cmd": "{\n  \"$schema\": \"https://opencode.ai/config.json\",\n  \"provider\": {\n    \"ollama\": {\n      \"npm\": \"@ai-sdk/openai-compatible\",\n      \"name\": \"Ollama (local)\",\n      \"options\": { \"baseURL\": \"http://localhost:11434/v1\" },\n      \"models\": {\n        \"{tag}\": {\n          \"name\": \"{tag} (local)\",\n          \"limit\": { \"context\": {ctx}, \"output\": 8192 }\n        }\n      }\n    }\n  }\n}"
+        },
+        {
+          "title": "Set Ollama's context to match",
+          "body": "opencode's docs say that if tool calls fail, raise Ollama's num_ctx to about 16K to 32K. Use the 'Raise the context length' step above with {ctx}, then restart Ollama."
+        },
+        {
+          "title": "Start it",
+          "body": "Go to your project folder, run opencode, and choose the {tag} model with /models. Run /init once if you want it to write an AGENTS.md summary of your project.",
+          "cmd": "cd path/to/your/project\nopencode"
+        }
+      ],
+      "address": "http://localhost:11434/v1",
+      "engine": "ollama",
+      "context": {
+        "checked": "2026-10-31",
+        "sources": [
+          {
+            "title": "opencode: Rules",
+            "url": "https://opencode.ai/docs/rules/"
+          }
+        ],
+        "files": [
+          {
+            "name": "AGENTS.md (project)",
+            "where": "The project's root folder",
+            "what": "Instructions added to the model's context for every session in that project. Commit it to Git."
+          },
+          {
+            "name": "AGENTS.md (global)",
+            "where": "~/.config/opencode/AGENTS.md",
+            "what": "Your personal rules for all projects. Stays out of Git."
+          },
+          {
+            "name": "/init",
+            "where": "Type it inside opencode",
+            "what": "Scans the repo and writes or improves AGENTS.md (build and test commands, layout, conventions)."
+          },
+          {
+            "name": "instructions list",
+            "where": "opencode.json",
+            "what": "Extra files (globs or URLs) combined with AGENTS.md. If there is no AGENTS.md, opencode falls back to CLAUDE.md."
+          }
+        ],
+        "example": {
+          "file": "AGENTS.md",
+          "text": "# Project notes\n- Python 3.12. Run the tests with: pytest -q\n- Format with: ruff format .  (run it before you finish)\n- Source is in src/, tests in tests/. Do not edit anything in build/.\n- Ask me before adding a new dependency.\n- Keep answers short and show the command you ran."
+        }
+      }
+    },
+    {
+      "id": "aider",
+      "name": "Aider",
+      "kind": "Coding assistant in your terminal",
+      "blurb": "Works in a git project folder. You ask for a change, it edits the files and commits it so you can undo it.",
+      "docs": "https://aider.chat/docs/llms/ollama.html",
+      "checked": "2026-10-24",
+      "steps": [
+        {
+          "title": "Install it",
+          "body": "Needs Python.",
+          "cmd": "python -m pip install aider-install\naider-install"
+        },
+        {
+          "title": "Start Ollama with a bigger context",
+          "body": "Ollama's default context is small and silently drops anything beyond it. Aider's docs start the server like this (Mac/Linux). On Windows, set OLLAMA_CONTEXT_LENGTH as a user environment variable instead, as in the step above.",
+          "cmd": "OLLAMA_CONTEXT_LENGTH={ctx} ollama serve"
+        },
+        {
+          "title": "Run it in your project",
+          "body": "In a second terminal. Aider's docs use the ollama_chat/ prefix.",
+          "cmd": "cd path/to/your/project\naider --model ollama_chat/{tag}"
+        }
+      ],
+      "address": "http://127.0.0.1:11434",
+      "engine": "ollama",
+      "context": {
+        "checked": "2026-10-31",
+        "sources": [
+          {
+            "title": "Complete guide: AI coding rules for Aider (community guide, not Aider's own docs)",
+            "url": "https://dev.to/yigit-konur/complete-guide-how-to-set-ai-coding-rules-for-aider-2j11"
+          }
+        ],
+        "files": [
+          {
+            "name": "CONVENTIONS.md",
+            "where": "The project's root folder",
+            "what": "Your coding rules in plain Markdown: stack, standards, testing, things to avoid."
+          },
+          {
+            "name": ".aider.conf.yml",
+            "where": "The project's root folder",
+            "what": "Lists files Aider should always read, under read:, so you do not have to add them each time."
+          }
+        ],
+        "notes": [
+          "This comes from a community guide, not Aider's own documentation, which this page could not read this month. Check Aider's docs for the current option names."
+        ],
+        "example": {
+          "file": ".aider.conf.yml",
+          "text": "read:\n  - CONVENTIONS.md\n\n# CONVENTIONS.md\n# Stack\n- Python 3.12, FastAPI\n# Standards\n- Type hints on all function signatures\n- No print statements; use the logger\n# Testing\n- Run: pytest -q"
+        }
+      }
+    },
+    {
+      "id": "lm-studio",
+      "name": "LM Studio",
+      "kind": "Alternative to Ollama: an app with its own model catalog and chat window",
+      "blurb": "A desktop app (Mac, Windows, Linux) that downloads models, chats with them and can serve them to other tools. It does not use Ollama, so you do not need the Ollama steps above if you choose it.",
+      "docs": "https://lmstudio.ai/docs/app",
+      "checked": "2026-10-24",
+      "steps": [
+        {
+          "title": "Install it",
+          "body": "Download the installer for your system from lmstudio.ai and run it. Apple Silicon Macs can also run MLX-format models."
+        },
+        {
+          "title": "Find the model",
+          "body": "Search for the model inside the app's model download screen. This page's names are Ollama names, and LM Studio's catalog is different, so search by name and size instead: try \"{tag}\" with the colon replaced by a space (for example family name, then size), and pick a 4-bit version (Q4) that fits your memory."
+        },
+        {
+          "title": "Set the context length",
+          "body": "LM Studio's CLI can load a model with a chosen context. First find its key with the first command, then load it with the second (replace the key). The app's model settings have the same option.",
+          "cmd": "lms ls\nlms load <model_key> --context-length {ctx}"
+        },
+        {
+          "title": "Serve it to other tools (optional)",
+          "body": "Open the Developer tab and switch on Start server, or run the command below. Other tools then connect to LM Studio instead of Ollama using this OpenAI-style address.",
+          "cmd": "lms server start\n# address for other tools:\nhttp://localhost:1234/v1"
+        }
+      ],
+      "address": "http://localhost:1234/v1",
+      "engine": "lm-studio"
+    },
+    {
+      "id": "goose",
+      "name": "Goose",
+      "kind": "Coding and automation agent (terminal and desktop app)",
+      "blurb": "An open-source agent, now under the Linux Foundation, that runs tasks using tools and extensions. It leans heavily on tool calling.",
+      "docs": "https://block.github.io/goose/docs/getting-started/providers",
+      "checked": "2026-10-24",
+      "steps": [
+        {
+          "title": "Install Goose",
+          "body": "Download it from the Goose docs site (link below). Its Ollama guide does not give an install command, so follow the install page there."
+        },
+        {
+          "title": "Point it at Ollama",
+          "body": "Run the command below, choose Configure Providers, then Ollama (Local open source models). Enter the host http://localhost:11434 and the model name {tag}.",
+          "cmd": "goose configure"
+        },
+        {
+          "title": "Use a model that supports tool calling",
+          "body": "Goose's guide says models without tool calling can only chat, and you would have to switch off all Goose extensions. Check that the model's Ollama page shows the tools tag."
+        },
+        {
+          "title": "Raise the context if extensions misbehave",
+          "body": "Goose's guide says that if it ignores extensions or its .goosehints file, the context is probably too small. Use the 'Raise the context length' step above with {ctx}."
+        },
+        {
+          "title": "If Ollama is on another computer",
+          "body": "Set the OLLAMA_HOST environment variable to the other computer's address and port (Goose's guide format: http://host:port) before running goose configure."
+        }
+      ],
+      "address": "http://localhost:11434",
+      "engine": "ollama"
+    },
+    {
+      "id": "anythingllm",
+      "name": "AnythingLLM",
+      "kind": "Document chat app",
+      "blurb": "A desktop app for asking questions of your own files. It stores the documents' search index itself and uses Ollama for the answers.",
+      "docs": "https://docs.anythingllm.com/setup/llm-configuration/local/ollama",
+      "checked": "2026-10-24",
+      "steps": [
+        {
+          "title": "Install it",
+          "body": "Install AnythingLLM from its website (its Ollama guide links to the download). Ollama must already be installed and running."
+        },
+        {
+          "title": "Connect it to Ollama",
+          "body": "In AnythingLLM's LLM settings choose Ollama, and use this base URL. Then choose {tag} as the model. You can change the model later in Settings.",
+          "cmd": "http://127.0.0.1:11434"
+        },
+        {
+          "title": "Check the context",
+          "body": "AnythingLLM's Ollama guide does not say what context it needs. If answers ignore your documents, use the 'Raise the context length' step above with {ctx} and run ollama ps."
+        },
+        {
+          "title": "Privacy note",
+          "body": "A 2026 review (StorageReview) says telemetry is on by default and that an earlier code-execution flaw was fixed in version 1.11.2 or later. Use a current version and review its privacy settings."
+        }
+      ],
+      "address": "http://127.0.0.1:11434",
+      "engine": "ollama"
+    },
+    {
+      "id": "pocketpal",
+      "name": "PocketPal AI",
+      "kind": "Phone app (Android and iPhone), open source",
+      "blurb": "A free app that runs models entirely on the phone, with no Ollama and no computer needed. It runs GGUF models with llama.cpp, and you add models from its built-in list or from Hugging Face.",
+      "docs": "https://github.com/a-ghorbani/pocketpal-ai",
+      "checked": "2026-10-26",
+      "phone": true,
+      "address": "on this phone (no network address)",
+      "engine": "on-device",
+      "steps": [
+        {
+          "title": "Install the app",
+          "body": "Install PocketPal AI from Google Play (or the App Store on an iPhone). Its README names only those two stores."
+        },
+        {
+          "title": "Add the model",
+          "body": "{name} is our pick for this phone, but it is not in the app's built-in list (see the list below), so add it yourself: tap the + button, choose Hugging Face, and search for \"{name}\" plus GGUF. Choose a quantization (the number such as Q4) whose file is well under the memory figure above. If you would rather start with no searching, any model in the built-in list below works: tap Download."
+        },
+        {
+          "title": "Load it and chat",
+          "body": "Press the model's load button, then open the chat and type. If the app closes or the phone gets hot, pick a smaller model or a smaller quantization."
+        },
+        {
+          "title": "Measure it",
+          "body": "The app has a Benchmark page that reports tokens per second and memory used. Send me those numbers and they will replace the page's estimate for this phone."
+        }
+      ],
+      "builtin_checked": "2026-10-26",
+      "builtin_src": "Read from the app's Models screen on the owner's phone, not from a published list. It may differ by version.",
+      "builtin": [
+        {
+          "name": "SmolLM3 3B",
+          "gb": 1.81
+        },
+        {
+          "name": "LFM2 2.6B",
+          "gb": 1.56
+        },
+        {
+          "name": "Qwen3 1.7B",
+          "gb": 1.28
+        },
+        {
+          "name": "LFM2.5 1.2B",
+          "gb": 0.73
+        },
+        {
+          "name": "LFM2-VL 1.6B",
+          "gb": 1.26,
+          "vision": true
+        },
+        {
+          "name": "Bonsai 8B",
+          "gb": 1.16
+        },
+        {
+          "name": "Gemma 3 1B",
+          "gb": 0.81
+        },
+        {
+          "name": "Spark-X2.5 1.7B",
+          "gb": 1.11
+        }
+      ]
+    }
+  ],
+  "context_general": {
+    "title": "Get more from it: memory and context files",
+    "intro": "These tools forget everything when a session ends, so the usual trick is a short file that is loaded at the start of every session. What you put in it, and how much, matters more with a small local model than with a big hosted one.",
+    "tips": [
+      "Everything in an always-loaded file uses part of the model's context window, and a bigger context needs more memory and runs slower. Keep these files short: Hermes itself caps its memory file at 2,200 characters (about 800 tokens) for this reason.",
+      "Put what rarely changes (how to run the tests, where things live, rules you always repeat) in the project file. Put the current state of the work in a few lines you update, and start a fresh session at a natural break instead of letting one chat grow forever.",
+      "Write each rule as a short, concrete line (a command, a path, a yes or no) rather than a paragraph. This is a rule of thumb, not something from a tool's docs: smaller models tend to follow short, specific lines better than long prose.",
+      "Keep personal preferences (tone, your OS and shell) in the tool's global file and project facts in the project file, so a new project starts with your habits but not the old project's details.",
+      "Files are usually read when a session starts. After editing one, start a new session (Hermes states this outright for its files) and ask the model what it was told to check it was read.",
+      "Match Ollama's context length to the tool (64K for the agents), as in the steps above. A long context file with a 4K default context will simply be cut off."
+    ]
+  }
+}
