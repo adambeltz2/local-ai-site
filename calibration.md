@@ -22,6 +22,8 @@ Record measured against estimated below. If estimates are consistently off by mo
 
 | Machine | Model tag | Estimated tok/s | Measured tok/s | Date | Notes (ollama ps PROCESSOR) |
 |---|---|---|---|---|---|
-| Acer Nitro Laptop | gpt-oss:20b | 9.1 | 9.86 | 2026-11-10 | 71%/29% CPU/GPU, 14 GB, context 4096, `ollama run --verbose` (250 tokens). First prompt after load had a slow prompt eval (1.94 tok/s for 72 tokens); the estimate was within 8 percent for generation. |
+| Acer Nitro Laptop | gpt-oss:20b | 9.1 | 20.87 | 2026-11-10 | Second prompt in the same session (197 tokens, prompt eval 70.9 tok/s). `ollama ps` showed 71%/29% CPU/GPU, 14 GB, context 4096 (checked before this run). The first prompt after loading measured only 9.86 tok/s generation and 1.94 tok/s prompt eval, so always use the second run. The estimate was about 2.3 times too low. One data point: do not change `MOE_EFF` until more machines are measured. |
+
+Run a prompt twice and record the second: the first one after loading is slow.
 
 Useful first measurements: one model that fits fully in the Acer's 6 GB GPU, one that spills into RAM, one on the Threadripper box with the 2080 Ti, and one on the MacBook Air.

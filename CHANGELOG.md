@@ -2,6 +2,9 @@
 
 Newest first. Versions are in `VERSION` and shown on the page.
 
+## 1.17.6 (2026-11-10)
+- Correction: the 9.86 tokens/s recorded in 1.17.5 was the first prompt after loading the model, which is slow. A second prompt measured 20.87 tokens/s, so the Acer's measured speed for gpt-oss:20b is now 20.9 (the page's estimate, 9.1, was about 2.3 times too low for this partly-on-GPU case). `calibration.md` now says to record the second run.
+
 ## 1.17.5 (2026-11-10)
 - First real speed measurement: Acer Nitro Laptop running gpt-oss:20b generates 9.86 tokens/s (`ollama run --verbose`, 71%/29% CPU/GPU, 14 GB, context 4096). The page estimated 9.1. Recorded as `measured` (9.9) and in `calibration.md`.
 
