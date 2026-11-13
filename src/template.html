@@ -269,6 +269,11 @@ details.browse>summary{font-size:1.05rem}
     </ul>
   </details>
 
+  <details id="modellog" class="card">
+    <summary>Models added and removed (change log)</summary>
+    <div id="modellog-body"></div>
+  </details>
+
   <footer>
     <p id="srcs"></p>
     <p>Data is compiled from the sources above and may be out of date or wrong. These are estimates, not guarantees: real speed depends on your drivers, settings and other programs. Check the model card, license and Ollama tag before you download. A <b>?</b> next to a license means it was not confirmed from a fetched source. Edit <code>models.json</code>, <code>machines.json</code> and <code>tasks.json</code>, then run <code>python3 build.py</code>.</p>
@@ -1127,7 +1132,7 @@ async function loadRemote(){
     if (j.tutorials && !(j.tutorials.tutorials && Object.keys(j.tutorials.tutorials).every(k => cids.has(k)))) return;
     const ok = j.tasks.tasks.every(t => t.ranked.every(x => ids.has(x.id)) && (t.clients || []).every(c => cids.has(c)));
     if (!ok) return;
-    DATA.updated = j.data.updated; DATA.about = j.data.about; DATA.sources = j.data.sources; DATA.models = j.data.models;
+    DATA.updated = j.data.updated; DATA.about = j.data.about; DATA.sources = j.data.sources; DATA.models = j.data.models; DATA.log = j.data.log; DATA.log_note = j.data.log_note;
     Object.keys(TASKS).forEach(k => delete TASKS[k]); Object.assign(TASKS, j.tasks);
     Object.keys(CLIENTS).forEach(k => delete CLIENTS[k]); Object.assign(CLIENTS, j.clients);
     if (j.tutorials){ Object.keys(TUTORIALS).forEach(k => delete TUTORIALS[k]); Object.assign(TUTORIALS, j.tutorials); }
@@ -1136,7 +1141,25 @@ async function loadRemote(){
   } catch (e) { /* offline or blocked: keep the built-in data */ }
 }
 
+function renderModelLog(){
+  const box = document.getElementById("modellog-body");
+  if (!box) return;
+  box.textContent = "";
+  const log = DATA.log || [];
+  if (DATA.log_note) box.appendChild(el("p", {class:"small", text: DATA.log_note}));
+  if (!log.length){ box.appendChild(el("p", {class:"small", text:"No changes recorded yet."})); return; }
+  const byDate = {};
+  log.forEach(e => { (byDate[e.date] = byDate[e.date] || []).push(e); });
+  Object.keys(byDate).sort().reverse().forEach(day => {
+    box.appendChild(el("h4", {class:"howto", text: day}));
+    const ul = el("ul", {});
+    byDate[day].forEach(e => ul.appendChild(el("li", {text: (e.change === "added" ? "Added: " : "Removed: ") + e.name + (e.note ? " (" + e.note + ")" : "")})));
+    box.appendChild(ul);
+  });
+}
+
 function init(){
+  renderModelLog();
   document.getElementById("sub").textContent = "Free, open-weight models you can run locally. Version " + BUILD.version + " · data last updated " + DATA.updated + (state.remote ? " (newer data loaded from GitHub)" : "") + ".";
   const ageDays = Math.floor((Date.now() - Date.parse(DATA.updated)) / 86400000);
   const stale = document.getElementById("stale");

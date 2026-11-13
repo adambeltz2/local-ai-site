@@ -2,6 +2,13 @@
 
 Newest first. Versions are in `VERSION` and shown on the page.
 
+## 1.18.0 (2026-11-13) refresh and a model change log
+- New: a "Models added and removed" section on the page, built from the `log` in `models.json` (date, added or removed, model, optional note). Rebuilt from the git history: 25 models were added between 2026-10-24 and 2026-11-06, none removed. The build now fails if a listed model has no entry. `REFRESH.md` has a step for keeping it.
+- No models added or removed in this refresh. Checked: Ollama 0.40.17-rc0 (Nov 10, no new models; Vulkan mmap, concurrent MLX generation, llama.cpp update); benchlm's Nov 13 ranking of 37 Ollama models; a November roundup of open releases (csuite.so, updated Nov 12).
+- Considered and not added (inclusion rule): GLM-4.7-Flash (19 GB, 198K context, Ollama page states no license, last updated 5 months ago; benchlm 38.74, below Qwen3.8 27B), LFM2.5 24B-A2B (15 GB, LFM Open License v1.0, tools and thinking; benchlm 34.44, below gpt-oss 20B at 36.88), Muse Glimmer 30B (Meta, Apache-2.0, Aug 10; 18 GB class, benchlm 32.2), Qwen3.5-122B-A10B (81 GB), Ornith-1.5-397B (242 GB), Kimi K3.1 Pro (cloud tag only). Ripple Preview was already ruled out on Nov 10.
+- benchlm scores updated in notes: Qwen3.8 27B 54.06 and Flash Next 54.06 (tied), Bonsai 2 27B 51.66, Ornith 1.5 9B 32.5 (Gemma 4 12B now scores higher at 34.11), gpt-oss 120B 31.93 (still 21st).
+- Not verified: why gpt-oss 120B's benchlm score dropped; Ripple Preview and Muse Glimmer Ollama sizes.
+
 ## 1.17.6 (2026-11-10)
 - Correction: the 9.86 tokens/s recorded in 1.17.5 was the first prompt after loading the model, which is slow. A second prompt measured 20.87 tokens/s, so the Acer's measured speed for gpt-oss:20b is now 20.9 (the page's estimate, 9.1, was about 2.3 times too low for this partly-on-GPU case). `calibration.md` now says to record the second run.
 

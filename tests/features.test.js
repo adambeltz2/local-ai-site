@@ -118,7 +118,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(!/\bspeech\b/i.test([...t.d.querySelectorAll("#tasks .chip")].map(c => c.textContent).join(" ")), "no speech task yet (recommender unchanged)");
 
   // ---- tutorials
-  const path = require("path"), pubroot = path.join(__dirname, "..");
+  const path = require("path"), root = path.join(__dirname, "..");
   const { execSync: run } = require("child_process");
   t = make(); t.machine("custom-build-desktop");
   const seen = {};
@@ -140,9 +140,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(!t.d.querySelector(".clients details.tut").hasAttribute("open"), "tutorial is collapsed by default");
   t.task("code-agent"); t.click([...t.d.querySelectorAll(".clients .chips .chip")].find(c => c.textContent === "opencode"));
   ok(!!t.d.querySelector(".clients details.tut .cmdrow"), "tutorial prompts have copy buttons");
-  fs.writeFileSync(path.join(pubroot, "screens", "opencode-start.png"), Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64"));
-  run("cd " + pubroot + " && python3 build.py");
-  const withShot = fs.readFileSync(path.join(pubroot, "index.html"), "utf8");
+  fs.writeFileSync(path.join(root, "screens", "opencode-start.png"), Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64"));
+  run("cd " + root + " && python3 build.py");
+  const withShot = fs.readFileSync(path.join(root, "index.html"), "utf8");
   ok(/data:image\/png;base64,/.test(withShot), "a screenshot file in screens/ is embedded in the page");
   const html2 = withShot;
   const dom2 = new JSDOM(html2, { runScripts: "dangerously", pretendToBeVisual: true });
@@ -150,9 +150,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   d2.querySelector('#tasks [data-task="code-agent"]').dispatchEvent(new dom2.window.MouseEvent("click", { bubbles: true }));
   [...d2.querySelectorAll(".clients .chips .chip")].find(c => c.textContent === "opencode").dispatchEvent(new dom2.window.MouseEvent("click", { bubbles: true }));
   ok(!!d2.querySelector(".clients figure.shot img"), "the screenshot shows in the matching tutorial step");
-  fs.unlinkSync(path.join(pubroot, "screens", "opencode-start.png"));
-  run("cd " + pubroot + " && python3 build.py");
-  ok(!/data:image\/png;base64,/.test(fs.readFileSync(path.join(pubroot, "index.html"), "utf8")), "removing the file removes it from the page");
+  fs.unlinkSync(path.join(root, "screens", "opencode-start.png"));
+  run("cd " + root + " && python3 build.py");
+  ok(!/data:image\/png;base64,/.test(fs.readFileSync(path.join(root, "index.html"), "utf8")), "removing the file removes it from the page");
 
   // ---- stack diagram
   t = make(); t.machine("acer-nitro-laptop"); t.task("code-agent");
@@ -220,19 +220,24 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   t.machine("pixel-9a"); t.task("finance");
   ok(/no phone app/.test(t.d.getElementById("result").textContent), "finance on the phone says no phone app is listed");
 
+  // ---- model change log
+  const mlog = t.d.getElementById("modellog-body");
+  ok(!!mlog && /2026-11-06/.test(mlog.textContent) && /Added: Ornith 1\.5 9B/.test(mlog.textContent), "change log lists models added, with dates");
+  ok(/first published on 2026-10-24 with 38 models/.test(mlog.textContent), "change log says how many models the first list had");
+
   // ---- public build strips hostnames (uses a temporary test hostname, then restores the file)
   const { execSync } = require("child_process");
-  const mpath = pubroot + "/machines.json", orig = fs.readFileSync(mpath, "utf8");
+  const mpath = root + "/machines.json", orig = fs.readFileSync(mpath, "utf8");
   try {
     const md = JSON.parse(orig); (Array.isArray(md) ? md : md.machines)[0].hostname = "TEST-HOST-1";
     fs.writeFileSync(mpath, JSON.stringify(md, null, 2));
-    execSync("cd " + pubroot + " && python3 build.py --public");
-    ok(!/TEST-HOST-1/.test(fs.readFileSync(pubroot + "/index.html", "utf8")), "public build has no hostnames");
-    execSync("cd " + pubroot + " && python3 build.py");
-    ok(/TEST-HOST-1/.test(fs.readFileSync(pubroot + "/index.html", "utf8")), "normal build keeps hostnames");
+    execSync("cd " + root + " && python3 build.py --public");
+    ok(!/TEST-HOST-1/.test(fs.readFileSync(root + "/index.html", "utf8")), "public build has no hostnames");
+    execSync("cd " + root + " && python3 build.py");
+    ok(/TEST-HOST-1/.test(fs.readFileSync(root + "/index.html", "utf8")), "normal build keeps hostnames");
   } finally {
     fs.writeFileSync(mpath, orig);
-    execSync("cd " + pubroot + " && python3 build.py --public");
+    execSync("cd " + root + " && python3 build.py");
   }
   console.log(fails ? fails + " FAILED" : "ALL PASSED");
 })();

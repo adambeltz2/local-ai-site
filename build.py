@@ -6,7 +6,7 @@ The result is one self-contained index.html that works offline.
 """
 import base64
 import datetime
-import json
+import json, re
 import sys
 from pathlib import Path
 
@@ -65,6 +65,21 @@ def validate_tasks(tasks, data):
 def validate(data, machines):
     errors = []
     seen = set()
+    log = data.get("log", [])
+    last = {}
+    for e in log:
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", str(e.get("date", ""))) or e.get("change") not in ("added", "removed") or not e.get("id") or not e.get("name"):
+            errors.append(f"log entry needs date (YYYY-MM-DD), change (added/removed), id and name: {e}")
+            continue
+        last.setdefault(e["id"], e["change"])  # the log is newest first
+    ids_now = {m["id"] for m in data["models"]}
+    baseline = set(data.get("baseline", []))
+    for mid in ids_now:
+        if last.get(mid) != "added" and mid not in baseline:
+            errors.append(f"{mid}: is listed but the log has no 'added' entry for it (add one to the log in models.json, newest first)")
+    for mid, ch in last.items():
+        if ch == "removed" and mid in ids_now:
+            errors.append(f"{mid}: log says removed but it is still listed")
     for m in data["models"]:
         mid = m.get("id", "?")
         if mid in seen:
