@@ -1,0 +1,267 @@
+{
+ "about": "A cheat sheet of Ollama commands. Each row says where it comes from: Ollama's own documentation, or a third-party guide where the official pages do not cover it.",
+ "checked": "2026-11-14",
+ "sources": {
+  "cli": {
+   "title": "Ollama docs: CLI reference",
+   "url": "https://docs.ollama.com/cli",
+   "official": true
+  },
+  "faq": {
+   "title": "Ollama docs: FAQ",
+   "url": "https://docs.ollama.com/faq",
+   "official": true
+  },
+  "trouble": {
+   "title": "Ollama docs: Troubleshooting",
+   "url": "https://docs.ollama.com/troubleshooting",
+   "official": true
+  },
+  "glukhov": {
+   "title": "Ollama CLI Cheatsheet (glukhov.org, says it was checked against Ollama v0.33.2)",
+   "url": "https://glukhov.org/llm-hosting/ollama/ollama-cheatsheet/",
+   "official": false
+  },
+  "centron": {
+   "title": "Managing Ollama models: updates and cleanup (centron.de)",
+   "url": "https://www.centron.de/tutorials/managing-ollama-models-updates-cleanup",
+   "official": false
+  }
+ },
+ "groups": [
+  {
+   "title": "Add a model",
+   "items": [
+    {
+     "cmd": "ollama pull <model>",
+     "what": "Download a model without starting a chat. Use the exact tag from this page (for example gpt-oss:20b).",
+     "src": [
+      "cli"
+     ]
+    },
+    {
+     "cmd": "ollama run <model>",
+     "what": "Chat with a model in the terminal.",
+     "src": [
+      "cli"
+     ],
+     "note": "Add --verbose to print speed after each answer (see Check and troubleshoot below)."
+    },
+    {
+     "cmd": "ollama launch",
+     "what": "Opens a setup menu that configures other tools (OpenCode, Claude Code, Codex, VS Code, Droid) to use your Ollama models. For example, ollama launch claude.",
+     "src": [
+      "cli"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "See what you have",
+   "items": [
+    {
+     "cmd": "ollama ls",
+     "what": "List the models downloaded to this computer, with sizes.",
+     "src": [
+      "cli",
+      "glukhov"
+     ],
+     "note": "The sizes can add up to more than the real disk use, because models share files (see the disk-use row under Check and troubleshoot)."
+    },
+    {
+     "cmd": "ollama ps",
+     "what": "List the models loaded in memory right now. The Processor column shows where each one runs: 100% GPU, 100% CPU, or a split such as 71%/29% CPU/GPU.",
+     "src": [
+      "cli",
+      "faq"
+     ]
+    },
+    {
+     "cmd": "ollama show <model>",
+     "what": "Details about a downloaded model: size, context length, quantization. Flags such as --modelfile, --parameters and --license narrow the output.",
+     "src": [
+      "glukhov"
+     ],
+     "note": "Not on Ollama's own CLI page; run ollama show --help to confirm on your version."
+    }
+   ]
+  },
+  {
+   "title": "Remove a model or free memory",
+   "items": [
+    {
+     "cmd": "ollama stop <model>",
+     "what": "Unload a model from memory now. By default Ollama keeps a model loaded for 5 minutes after the last use.",
+     "src": [
+      "cli",
+      "faq"
+     ]
+    },
+    {
+     "cmd": "ollama rm <model>",
+     "what": "Delete a downloaded model from disk. You can name several, separated by spaces.",
+     "src": [
+      "cli",
+      "centron"
+     ],
+     "note": "Check ollama ps first: deleting a model that is loaded can leave a running request in an undefined state. If two tags share the same ID, remove both to free the space."
+    },
+    {
+     "cmd": "ollama cp <source> <new-name>",
+     "what": "Copy a model under a new name without downloading it again. Useful before you edit a Modelfile.",
+     "src": [
+      "glukhov"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Update",
+   "items": [
+    {
+     "cmd": "Ollama itself: Windows and macOS",
+     "what": "Ollama downloads updates by itself. Click the Ollama icon in the taskbar or menu bar and choose Restart to update. You can also install the latest version over the top.",
+     "src": [
+      "faq"
+     ]
+    },
+    {
+     "cmd": "curl -fsSL https://ollama.com/install.sh | sh",
+     "what": "Linux: update Ollama by running the install script again.",
+     "src": [
+      "faq"
+     ]
+    },
+    {
+     "cmd": "ollama pull <model>:<tag>",
+     "what": "Update a model you already have: pull it again. One guide says Ollama then downloads only the files that changed, and finishes quickly if nothing changed.",
+     "src": [
+      "centron"
+     ],
+     "note": "That guide gives no single command to update every model at once. A tag such as 8b can be republished with different weights, so pull the exact tag you use."
+    }
+   ]
+  },
+  {
+   "title": "Change how it runs",
+   "items": [
+    {
+     "cmd": "ollama create <name> -f Modelfile",
+     "what": "Make a customized model from a Modelfile (this page uses it to raise the context length).",
+     "src": [
+      "cli"
+     ]
+    },
+    {
+     "cmd": "OLLAMA_CONTEXT_LENGTH=8192 ollama serve",
+     "what": "The default context window is 4096 tokens. This environment variable raises it (this exact example is from Ollama's FAQ). A bigger context uses more memory.",
+     "src": [
+      "faq"
+     ]
+    },
+    {
+     "cmd": "OLLAMA_KEEP_ALIVE",
+     "what": "How long a model stays in memory after use. The default is 5 minutes. Setting it when the server starts changes it for all models.",
+     "src": [
+      "faq"
+     ]
+    },
+    {
+     "cmd": "OLLAMA_HOST=0.0.0.0:11434",
+     "what": "Let other computers on your network use this Ollama. By default it only listens on this computer.",
+     "src": [
+      "faq"
+     ]
+    },
+    {
+     "cmd": "OLLAMA_MODELS",
+     "what": "Move where models are stored. Default folders: Windows C:\\Users\\<you>\\.ollama\\models, macOS ~/.ollama/models, Linux /usr/share/ollama/.ollama/models. On Linux the ollama user needs read and write access to the new folder.",
+     "src": [
+      "faq"
+     ]
+    },
+    {
+     "cmd": "ollama serve --help",
+     "what": "Lists the environment variables the server understands.",
+     "src": [
+      "cli"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "How to set an environment variable",
+   "items": [
+    {
+     "cmd": "Windows",
+     "what": "Quit Ollama from the tray icon, edit the variable for your user account, then start Ollama again.",
+     "src": [
+      "faq"
+     ]
+    },
+    {
+     "cmd": "macOS: launchctl setenv <NAME> \"<value>\"",
+     "what": "Run launchctl setenv with the variable and its value, then restart the Ollama app.",
+     "src": [
+      "faq"
+     ]
+    },
+    {
+     "cmd": "Linux: systemctl edit ollama.service",
+     "what": "Add the variable under [Service], then run systemctl daemon-reload and systemctl restart ollama.",
+     "src": [
+      "faq"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Check and troubleshoot",
+   "items": [
+    {
+     "cmd": "ollama run <model> --verbose",
+     "what": "Prints timing after each answer. The eval rate line is the speed in tokens per second. Ask twice and use the second answer: the first one after loading is slower.",
+     "src": [
+      "glukhov"
+     ],
+     "note": "The second-run advice is from this page's own measurements (see calibration.md), not from the guide."
+    },
+    {
+     "cmd": "explorer %LOCALAPPDATA%\\Ollama",
+     "what": "Windows: opens the folder with server.log (newest) and server-#.log (older).",
+     "src": [
+      "trouble"
+     ]
+    },
+    {
+     "cmd": "cat ~/.ollama/logs/server.log",
+     "what": "macOS: show the server log.",
+     "src": [
+      "trouble"
+     ]
+    },
+    {
+     "cmd": "journalctl -u ollama --no-pager --follow --pager-end",
+     "what": "Linux (systemd): follow the server log. If you started ollama serve in a terminal, the log is in that terminal.",
+     "src": [
+      "trouble"
+     ]
+    },
+    {
+     "cmd": "du -sh ~/.ollama/models",
+     "what": "Real disk use of your models (Linux service installs: sudo du -sh /usr/share/ollama/.ollama/models). Ollama has no prune command, so interrupted downloads can leave unused files behind.",
+     "src": [
+      "centron"
+     ]
+    },
+    {
+     "cmd": "ollama signin  /  ollama signout",
+     "what": "Sign in to or out of your Ollama account.",
+     "src": [
+      "cli"
+     ]
+    }
+   ]
+  }
+ ]
+}

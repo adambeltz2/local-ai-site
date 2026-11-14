@@ -166,6 +166,25 @@ def validate_tutorials(tutorials, clients):
     return errors
 
 
+def validate_ollama(o):
+    errors = []
+    srcs = o.get("sources", {})
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", str(o.get("checked", ""))):
+        errors.append("ollama.json needs checked: YYYY-MM-DD")
+    for sid, s in srcs.items():
+        if not str(s.get("url", "")).startswith("https://") or not s.get("title") or not isinstance(s.get("official"), bool):
+            errors.append(f"ollama.json source {sid} needs title, https url and official true/false")
+    for g in o.get("groups", []):
+        if not g.get("title") or not g.get("items"):
+            errors.append("ollama.json: every group needs a title and items")
+        for it in g.get("items", []):
+            if not it.get("cmd") or not it.get("what"):
+                errors.append(f"ollama.json: item needs cmd and what: {it}")
+            if not it.get("src") or any(s not in srcs for s in it["src"]):
+                errors.append(f"ollama.json: item needs src ids that exist in sources: {it.get('cmd')}")
+    return errors
+
+
 def load_screens(tutorials):
     """Inline screenshots named by `shot` fields from screens/ as data: URIs. Missing files are simply skipped."""
     shots = {}
@@ -195,7 +214,8 @@ def main():
     clients = load("clients.json")
     tutorials = load("tutorials.json")
     osdata = load("os.json")
-    errors = validate(data, machines) + validate_tasks(tasks, data) + validate_clients(clients, tasks) + validate_tutorials(tutorials, clients)
+    ollama = load("ollama.json")
+    errors = validate(data, machines) + validate_tasks(tasks, data) + validate_clients(clients, tasks) + validate_tutorials(tutorials, clients) + validate_ollama(ollama)
     if errors:
         print("Validation failed:", *errors, sep="\n  ", file=sys.stderr)
         return 1
@@ -212,6 +232,7 @@ def main():
         "/*__TUTORIALS_JSON__*/null": tutorials,
         "/*__SCREENS_JSON__*/null": load_screens(tutorials),
         "/*__OS_JSON__*/null": osdata,
+        "/*__OLLAMA_JSON__*/null": ollama,
         "/*__VERSION_JSON__*/null": {"version": version, "built": built},
     }
     for token, payload in tokens.items():
@@ -221,7 +242,7 @@ def main():
         html = html.replace(token, js_json(payload))
     (ROOT / "index.html").write_text(html, encoding="utf-8")
     # The page can fetch this file from GitHub so data updates do not need a new page.
-    bundle = {"schema": 1, "version": version, "built": built, "data": data, "tasks": tasks, "clients": clients, "tutorials": tutorials, "os": osdata}
+    bundle = {"schema": 1, "version": version, "built": built, "data": data, "tasks": tasks, "clients": clients, "tutorials": tutorials, "os": osdata, "ollama": ollama}
     (ROOT / "data.json").write_text(json.dumps(bundle, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"Built index.html v{version} ({built}): {len(data['models'])} models, {len(machines)} machine(s), {len(tasks['tasks'])} tasks")
     return 0

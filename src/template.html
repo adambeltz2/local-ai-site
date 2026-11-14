@@ -96,6 +96,8 @@ pre.cmd{flex:1 1 240px;margin:0;padding:8px 10px;background:var(--card);border:1
 .cmp{margin-top:14px}
 .cmp summary{font-weight:600}
 .cmpwrap{overflow-x:auto;margin-top:8px;border:1px solid var(--line);border-radius:10px}
+.csitem{padding:10px 0;border-bottom:1px solid var(--line)}
+.csitem pre.cmd{margin-bottom:6px}
 table.compare{width:100%;min-width:560px;border-collapse:collapse;font-size:.9rem}
 table.compare th,table.compare td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;position:static}
 table.compare thead th{background:var(--card);position:static}
@@ -269,6 +271,11 @@ details.browse>summary{font-size:1.05rem}
     </ul>
   </details>
 
+  <details id="cheatsheet" class="card">
+    <summary>Ollama cheat sheet (add, remove, update, check)</summary>
+    <div id="cheatsheet-body"></div>
+  </details>
+
   <details id="modellog" class="card">
     <summary>Models added and removed (change log)</summary>
     <div id="modellog-body"></div>
@@ -309,6 +316,7 @@ const BUILD = /*__VERSION_JSON__*/null;
 const CLIENTS = /*__CLIENTS_JSON__*/null;
 const OSDATA = /*__OS_JSON__*/null;
 const TUTORIALS = /*__TUTORIALS_JSON__*/null;
+const OLLAMA = /*__OLLAMA_JSON__*/null;
 const SCREENS = /*__SCREENS_JSON__*/null;
 const TASKS = /*__TASKS_JSON__*/null;
 
@@ -1133,12 +1141,31 @@ async function loadRemote(){
     const ok = j.tasks.tasks.every(t => t.ranked.every(x => ids.has(x.id)) && (t.clients || []).every(c => cids.has(c)));
     if (!ok) return;
     DATA.updated = j.data.updated; DATA.about = j.data.about; DATA.sources = j.data.sources; DATA.models = j.data.models; DATA.log = j.data.log; DATA.log_note = j.data.log_note;
+    if (j.ollama && j.ollama.groups){ Object.keys(OLLAMA).forEach(k => delete OLLAMA[k]); Object.assign(OLLAMA, j.ollama); renderCheatsheet(); }
     Object.keys(TASKS).forEach(k => delete TASKS[k]); Object.assign(TASKS, j.tasks);
     Object.keys(CLIENTS).forEach(k => delete CLIENTS[k]); Object.assign(CLIENTS, j.clients);
     if (j.tutorials){ Object.keys(TUTORIALS).forEach(k => delete TUTORIALS[k]); Object.assign(TUTORIALS, j.tutorials); }
     Object.keys(modelById).forEach(k => delete modelById[k]); DATA.models.forEach(m => { modelById[m.id] = m; });
     state.remote = j.version || true;
   } catch (e) { /* offline or blocked: keep the built-in data */ }
+}
+
+function renderCheatsheet(){
+  const box = document.getElementById("cheatsheet-body");
+  if (!box || !OLLAMA || !OLLAMA.groups) return;
+  box.textContent = "";
+  box.appendChild(el("p", {class:"small", text: OLLAMA.about + " Checked " + OLLAMA.checked + "."}));
+  OLLAMA.groups.forEach(g => {
+    box.appendChild(el("h4", {class:"howto", text: g.title}));
+    g.items.forEach(it => {
+      const official = it.src.some(id => OLLAMA.sources[id] && OLLAMA.sources[id].official);
+      const from = el("div", {class:"small"}, [document.createTextNode((official ? "From Ollama's docs: " : "From a third-party guide (not on Ollama's own pages): ")),
+        ...it.src.flatMap((id, n) => { const s = OLLAMA.sources[id]; const a = el("a", {href: safeUrl(s.url), target:"_blank", rel:"noopener noreferrer", text: s.title}); return n ? [document.createTextNode("; "), a] : [a]; })]);
+      const copyable = /^(ollama [a-z]+( <|$| -)|curl |OLLAMA_[A-Z_]+=|journalctl |cat |du |explorer )/.test(it.cmd) && !/ {2}\/ {2}/.test(it.cmd);
+      const head = copyable ? cmdRow(it.cmd) : el("pre", {class:"cmd", text: it.cmd});
+      box.appendChild(el("div", {class:"csitem"}, [head, el("div", {text: it.what})].concat(it.note ? [el("div", {class:"small", text: it.note})] : [], [from])));
+    });
+  });
 }
 
 function renderModelLog(){
@@ -1160,6 +1187,7 @@ function renderModelLog(){
 
 function init(){
   renderModelLog();
+  renderCheatsheet();
   document.getElementById("sub").textContent = "Free, open-weight models you can run locally. Version " + BUILD.version + " · data last updated " + DATA.updated + (state.remote ? " (newer data loaded from GitHub)" : "") + ".";
   const ageDays = Math.floor((Date.now() - Date.parse(DATA.updated)) / 86400000);
   const stale = document.getElementById("stale");

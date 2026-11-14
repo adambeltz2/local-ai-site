@@ -220,6 +220,13 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   t.machine("pixel-9a"); t.task("finance");
   ok(/no phone app/.test(t.d.getElementById("result").textContent), "finance on the phone says no phone app is listed");
 
+  // ---- Ollama cheat sheet
+  const cs = t.d.getElementById("cheatsheet-body");
+  ok(!!cs && cs.querySelectorAll(".csitem").length >= 20, "cheat sheet has its command rows");
+  ok(/ollama pull <model>/.test(cs.textContent) && /ollama rm <model>/.test(cs.textContent) && /Restart to update/.test(cs.textContent), "cheat sheet covers add, remove and update");
+  ok(Array.from(cs.querySelectorAll("a")).every(a => /^https:\/\//.test(a.href)), "cheat sheet links are https");
+  ok(/third-party guide/.test(cs.textContent) && /From Ollama's docs/.test(cs.textContent), "cheat sheet says whether each row is from the official docs");
+
   // ---- model change log
   const mlog = t.d.getElementById("modellog-body");
   ok(!!mlog && /2026-11-06/.test(mlog.textContent) && /Added: Ornith 1\.5 9B/.test(mlog.textContent), "change log lists models added, with dates");

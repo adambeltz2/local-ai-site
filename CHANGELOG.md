@@ -2,6 +2,10 @@
 
 Newest first. Versions are in `VERSION` and shown on the page.
 
+## 1.19.0 (2026-11-14)
+- New "Ollama cheat sheet (add, remove, update, check)" section, from `ollama.json`: pull, run, launch, ls, ps, show, stop, rm, cp, updating Ollama and models, create, environment variables (context length, keep alive, host, model folder) and how to set them on each OS, logs, speed and disk checks. Each row says whether it comes from Ollama's own docs or a third-party guide, with a link. The build checks every row has a source.
+- Third-party only (not on Ollama's CLI page): `ollama show`, `ollama cp`, `--verbose`, updating a model by pulling it again, disk-use commands. The official CLI page also does not say how to update Ollama or models; the FAQ covers updating Ollama.
+
 ## 1.18.0 (2026-11-13) refresh and a model change log
 - New: a "Models added and removed" section on the page, built from the `log` in `models.json` (date, added or removed, model, optional note). Rebuilt from the git history: 25 models were added between 2026-10-24 and 2026-11-06, none removed. The build now fails if a listed model has no entry. `REFRESH.md` has a step for keeping it.
 - No models added or removed in this refresh. Checked: Ollama 0.40.17-rc0 (Nov 10, no new models; Vulkan mmap, concurrent MLX generation, llama.cpp update); benchlm's Nov 13 ranking of 37 Ollama models; a November roundup of open releases (csuite.so, updated Nov 12).
